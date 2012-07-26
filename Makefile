@@ -7,8 +7,8 @@ CFLAGS = -g `sdl-config --cflags`
 LDFLAGS = -g
 BINNAME = c64pixels
 
-OBJS = main.o render.o render_sdl.o
-INCLUDES = common.h render.h
+OBJS = main.o render.o render_sdl.o misc_sdl.o
+INCLUDES = common.h render.h misc.h render_data.h
 all: $(BINNAME)
 
 $(BINNAME): $(OBJS)
