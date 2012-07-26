@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "types.h"
 #include "misc.h"
