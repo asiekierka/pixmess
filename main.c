@@ -9,6 +9,8 @@ remember to do it often, or everything will turn to crap!
 #include "common.h"
 #include "map.h"
 #include "render.h"
+s32 tx = 0;
+s32 ty = 0;
 
 void display (s32 root_x, s32 root_y)
 {
@@ -39,8 +41,6 @@ int main(int argc, char *argv[])
 	sfp_printf_1x(3*8,7*8,0x07,0,"(You also suck at this game.)");
 	sfp_render_end();
 
-	sfp_delay(2000);
-	
 	return 0;
 }
 

@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define absmod(x,y) ((x)<0 ? 63-(abs((x)+1)%(y)) : (x)%(y))
+
 void sfp_delay(u32 ms);
 
 #endif /* _MISC_H_ */

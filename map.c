@@ -85,16 +85,16 @@ void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 
 tile_t map_get_tile(s32 x, s32 y)
 {
-	u32 chunk_x = x/LAYER_WIDTH;
-	u32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = x/LAYER_WIDTH;
+	s32 chunk_y = y/LAYER_HEIGHT;
 	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
-	return layer_get_tile((u8)(x%LAYER_WIDTH),(u8)(y%LAYER_HEIGHT),chunk);
+	return layer_get_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),chunk);
 }
 
 void map_set_tile(s32 x, s32 y, tile_t tile)
 {
-	u32 chunk_x = x/LAYER_WIDTH;
-	u32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = x/LAYER_WIDTH;
+	s32 chunk_y = y/LAYER_HEIGHT;
 	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
-	layer_set_tile((u8)(x%LAYER_WIDTH),(u8)(y%LAYER_HEIGHT),tile,chunk);
+	layer_set_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
 }
