@@ -17,4 +17,8 @@ typedef struct layer { u32 x,y; u16 w,h; tile_t *tiles; } layer_t;
 
 enum { LAYER_UNALLOC = 0, LAYER_UNUSED = 1, LAYER_USED = 2 };
 
+enum { TILE_DUMMY = 0, TILE_FLOOR = 1, TILE_WALL = 2 };
+
+#define PLAYER_SELF 65535 // selfish ID
+
 #endif /* _TYPES_H_ */

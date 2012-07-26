@@ -1,13 +1,38 @@
 #include "common.h"
 
 #define LAYER_SIZE 64 // 32-255, no promises for lower, will crash on higher
+#define LAYER_WIDTH 64
+#define LAYER_HEIGHT 64
+#define layer_request layer_dummy_request
 
 // TODO these defintions should have a file later on, maybe
-layer_t *layer_request(s32 x, s32 y);
 void net_report_layer(s32 x, s32 y, u8 position);
 
 layer_t *layers[LAYER_SIZE];
 u8 layer_set[LAYER_SIZE];
+
+layer_t *layer_new(void)
+{
+	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
+	a->w = LAYER_WIDTH;
+	a->h = LAYER_HEIGHT;
+	a->tiles = (tile_t *)malloc(sizeof(tile_t)*LAYER_WIDTH*LAYER_HEIGHT);
+	int i;
+	for(i=0;i<LAYER_WIDTH*LAYER_HEIGHT;i++)
+	{
+		a->tiles[i].type = 0;
+		a->tiles[i].chr = 0;
+		a->tiles[i].col = 0;
+	}
+	return a;
+};
+
+layer_t *layer_dummy_request(s32 x, s32 y)
+{
+	layer_t *a = layer_new();
+	a->x = x; a->y = y;
+	return a;
+};
 
 layer_t *layer_get(s32 x, s32 y)
 {
