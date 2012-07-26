@@ -19,6 +19,7 @@ void display (s32 root_x, s32 root_y)
 	s32 rx = root_x;
 	s32 ry = root_y;
 	tile_t tile;
+	map_layer_set_used_rendered(rx+(SFP_SCREEN_WIDTH/2),ry+(SFP_SCREEN_HEIGHT/2));
 	for(j=0;j<SFP_SCREEN_HEIGHT;j++)
 	{
 		for(i=0;i<SFP_SCREEN_WIDTH;i++)
@@ -31,6 +32,7 @@ void display (s32 root_x, s32 root_y)
 		ry++;
 	}
 }
+
 int main(int argc, char *argv[])
 {
 	sfp_init_render();

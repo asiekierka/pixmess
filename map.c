@@ -20,7 +20,7 @@ layer_t *layer_new(void)
 	{
 		a->tiles[i].type = 0;
 		a->tiles[i].chr = (u16)(rand()%256);
-		a->tiles[i].col = 8;
+		a->tiles[i].col = 1+(rand()%15);
 	}
 	return a;
 };
@@ -71,6 +71,37 @@ void map_layer_set_unused(s32 x, s32 y)
 			return;
 		}
 	}
+}
+
+void map_layer_set_used(s32 x, s32 y)
+{
+	u8 i;
+	for(i=0;i<LAYER_SIZE;i++) {
+		if(layer_set[i]==LAYER_USED && layers[i]->x==x && layers[i]->y==y)
+		{
+			layer_set[i] = LAYER_USED;
+			return;
+		}
+	}
+}
+
+void map_layer_set_used_rendered(s32 x, s32 y)
+{
+	s32 chunk_x = x/LAYER_WIDTH;
+	s32 chunk_y = y/LAYER_HEIGHT;
+	u8 i;
+	for(i=0;i<LAYER_SIZE;i++) 
+		layer_set[i] = LAYER_UNUSED;
+	// Yay for optimization! Lol
+	map_layer_set_used(chunk_x-1,chunk_y-1);
+	map_layer_set_used(chunk_x,chunk_y-1);
+	map_layer_set_used(chunk_x+1,chunk_y-1);
+	map_layer_set_used(chunk_x-1,chunk_y);
+	map_layer_set_used(chunk_x,chunk_y);
+	map_layer_set_used(chunk_x+1,chunk_y);
+	map_layer_set_used(chunk_x-1,chunk_y+1);
+	map_layer_set_used(chunk_x,chunk_y+1);
+	map_layer_set_used(chunk_x+1,chunk_y+1);
 }
 
 tile_t layer_get_tile(u8 x, u8 y, layer_t *layer)
