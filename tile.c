@@ -1,4 +1,5 @@
 #include "common.h"
+#include "tile.h"
 
 u8 tile_walkable(u8 type)
 {

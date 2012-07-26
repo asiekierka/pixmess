@@ -1,4 +1,5 @@
 #include "common.h"
+#include "player.h"
 
 player_t *players[PLAYER_AMOUNT];
 u8 players_set[PLAYER_AMOUNT];

@@ -19,7 +19,4 @@ enum { LAYER_UNALLOC = 0, LAYER_UNUSED = 1, LAYER_USED = 2 };
 
 enum { TILE_DUMMY = 0, TILE_FLOOR = 1, TILE_WALL = 2 };
 
-#define PLAYER_SELF 0 // selfish ID, 0 because.
-#define PLAYER_AMOUNT 256
-
 #endif /* _TYPES_H_ */

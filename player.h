@@ -3,6 +3,9 @@
 
 #include "common.h"
 
+#define PLAYER_SELF 0 // selfish ID, 0 because.
+#define PLAYER_AMOUNT 256
+
 player_t *player_get(u16 id);
 void player_remove(u16 id);
 

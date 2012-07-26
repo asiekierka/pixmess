@@ -1,8 +1,6 @@
 #include "common.h"
+#include "map.h"
 
-#define LAYER_SIZE 64 // 32-255, no promises for lower, will crash on higher
-#define LAYER_WIDTH 64
-#define LAYER_HEIGHT 64
 #define layer_request layer_dummy_request
 
 // TODO these defintions should have a file later on, maybe
