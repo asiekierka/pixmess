@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <SDL.h>
-
 #include "types.h"
-
+#include "misc.h"
 

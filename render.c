@@ -2,6 +2,7 @@
 
 #define I_WANT_INTERNAL_RENDER_STUFF
 #include "render.h"
+#include "render_data.h"
 
 // This code is insanely DRY.
 

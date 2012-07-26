@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 	sfp_printf_1x(3*8,7*8,0x07,0,"(You also suck at this game.)");
 	sfp_render_end();
 
-	SDL_Delay(2000);
+	sfp_delay(2000);
 	
 	return 0;
 }

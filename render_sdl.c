@@ -1,4 +1,6 @@
 #include "common.h"
+
+#define I_WANT_INTERNAL_RENDER_STUFF
 #include "render.h"
 
 // Rendering code by GreaseMonkey
