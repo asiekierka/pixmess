@@ -32,7 +32,7 @@ layer_t *layer_dummy_request(s32 x, s32 y)
 	return a;
 };
 
-layer_t *layer_get(s32 x, s32 y)
+layer_t *map_get_layer(s32 x, s32 y)
 {
 	u8 i;
 	// Finding existing layer
@@ -61,7 +61,7 @@ layer_t *layer_get(s32 x, s32 y)
 	return NULL;
 }
 
-void layer_set_unused(s32 x, s32 y)
+void map_layer_set_unused(s32 x, s32 y)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) {
@@ -71,4 +71,30 @@ void layer_set_unused(s32 x, s32 y)
 			return;
 		}
 	}
+}
+
+tile_t layer_get_tile(u8 x, u8 y, layer_t *layer)
+{
+	return layer->tiles[y*LAYER_WIDTH+x];
+}
+
+void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
+{
+	layer->tiles[y*LAYER_WIDTH+x] = tile;
+}
+
+tile_t map_get_tile(s32 x, s32 y)
+{
+	u32 chunk_x = x/LAYER_WIDTH;
+	u32 chunk_y = y/LAYER_HEIGHT;
+	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
+	return layer_get_tile((u8)(x%LAYER_WIDTH),(u8)(y%LAYER_HEIGHT),chunk);
+}
+
+void map_set_tile(s32 x, s32 y, tile_t tile)
+{
+	u32 chunk_x = x/LAYER_WIDTH;
+	u32 chunk_y = y/LAYER_HEIGHT;
+	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
+	layer_set_tile((u8)(x%LAYER_WIDTH),(u8)(y%LAYER_HEIGHT),tile,chunk);
 }
