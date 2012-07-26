@@ -1,6 +1,8 @@
 #include "common.h"
 #include "render.h"
 
+// Rendering code by GreaseMonkey
+
 SDL_Surface *screen;
 
 int sfp_sdl_error(char *ref)
