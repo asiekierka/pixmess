@@ -13,11 +13,12 @@
 
 void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p);
 void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p);
-void sfp_render_init_video();
+int sfp_render_init_video();
 void sfp_render_render_begin();
 void sfp_render_render_end();
 #endif
 
+int sfp_init_render();
 void sfp_render_begin();
 void sfp_render_end();
 

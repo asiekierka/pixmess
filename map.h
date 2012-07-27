@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-#define LAYER_SIZE 64 // 32-255, no promises for lower, will crash on higher
+#define LAYER_SIZE 64 /* 32-255, no promises for lower, will crash on higher */
 #define LAYER_WIDTH 64
 #define LAYER_HEIGHT 64
 

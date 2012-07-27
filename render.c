@@ -9,24 +9,33 @@
 u8 palette[16*3];
 u8 font[256*8];
 
-u8 initialized;
+u8 render_initialized = 0;
 
-void sfp_init_render()
+int sfp_init_render()
 {
 	// Load defaults.
 	memcpy(font, font_cga, 256*8);
 	memcpy(palette, palette_cga, 16*3);
 
 	// Now call the real deal.
-	sfp_render_init_video();
+	if(sfp_render_init_video())
+		return 1;
 
-	initialized = 255;
+	render_initialized = 255;
 }
 
 void sfp_render_begin()
 {
 	// safeguard! idk why
-	if(!initialized) sfp_init_render();
+	if(!render_initialized)
+		if(sfp_init_render())
+		{
+			// apparently this is a bad thing,
+			// but you SHOULD have called sfp_init_render beforehand.
+			// --GM
+			fprintf(stderr, "FATAL: sfp_render_begin safeguard failed!\n");
+			abort();
+		}
 
 	sfp_render_render_begin();
 }

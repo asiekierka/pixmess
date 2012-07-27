@@ -47,17 +47,24 @@ void display (player_t *p)
 
 int main(int argc, char *argv[])
 {
-	sfp_init_render();
+	if(sfp_init_render())
+		return 1;
 
 	player = player_get(PLAYER_SELF);
 
-	sfp_render_begin();
-	display(player);
-	sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
-	sfp_render_end();
-
-	sfp_delay(900);
-
+	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
+	{
+		sfp_render_begin();
+		display(player);
+		sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+		sfp_render_end();
+	
+		sfp_delay(40);
+		
+		sfp_event_poll();
+	}
+	
+	
 	return 0;
 }
 

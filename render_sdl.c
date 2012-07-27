@@ -13,10 +13,10 @@ int sfp_sdl_error(char *ref)
 	return 1;
 }
 
-void sfp_render_init_video()
+int sfp_render_init_video()
 {
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE))
-		exit(sfp_sdl_error("SDL_Init")); // Asie, don't. They say if you do this, you'll die.	
+		return sfp_sdl_error("SDL_Init"); // asie this would be a better idea --GM
 	SDL_WM_SetCaption("c64pixels v0.-1", NULL);
 	
 	screen = SDL_SetVideoMode(
@@ -25,7 +25,9 @@ void sfp_render_init_video()
 		32,
 		SDL_SWSURFACE | SDL_DOUBLEBUF);
 	if(screen == NULL)
-		exit(sfp_sdl_error("SDL_SetVideoMode"));
+		return sfp_sdl_error("SDL_SetVideoMode");
+	
+	return 0;
 }
 
 void sfp_render_render_begin()
