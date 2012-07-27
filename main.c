@@ -13,6 +13,8 @@ remember to do it often, or everything will turn to crap!
 #include "render.h"
 
 player_t *player;
+u8 movement_wait;
+u64 frame_counter;
 
 void display (player_t *p)
 {
@@ -53,19 +55,37 @@ int main(int argc, char *argv[])
 
 	map_init();
 
+	movement_wait = 0;
+
 	player = player_get(PLAYER_SELF);
 
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
 	{
 		sfp_render_begin();
 		display(player);
-		sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
-		sfp_putc_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,1,14,0x02);
+		if(frame_counter<150) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+		sfp_printf_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,14,0,"Mouse");
 		sfp_render_end();
-	
-		sfp_delay(20);
+
+		if(movement_wait==0)
+		{
+			if(sfp_event_key(SFP_KEY_UP))
+				{ player->y--; movement_wait=2; }
+			if(sfp_event_key(SFP_KEY_DOWN))
+				{ player->y++; movement_wait=2; }
+			if(sfp_event_key(SFP_KEY_LEFT))
+				{ player->x--; movement_wait=2; }
+			if(sfp_event_key(SFP_KEY_RIGHT))
+				{ player->x++; movement_wait=2; }
+		}
+
+		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
 		
+		if(movement_wait>0) movement_wait--;
+		frame_counter++;
+
 		sfp_event_poll();
+		sfp_event_tick();
 	}
 	
 	return 0;

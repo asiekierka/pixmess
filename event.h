@@ -136,12 +136,20 @@ enum
 	SFP_KEY_MENU,
 };
 
+void sfp_event_keywait(int key, int time);
+int sfp_event_getkeywait(int key);
+
 int sfp_event_key(int key);
 int sfp_event_getkey();
 int sfp_event_mouse_x();
 int sfp_event_mouse_y();
 int sfp_event_mouse_button(int btn);
 void sfp_event_poll();
+void sfp_event_tick();
+
+// Abstracted
+int sfp_event_keywithwait(int key);
+int sfp_event_getkeywithwait(void);
 
 #endif /* _EVENT_H_ */
 

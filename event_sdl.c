@@ -117,6 +117,7 @@ int keyqueue_start = 0;
 int keyqueue_end = 0;
 
 u8 keysel[1024];
+u8 waiting_time[1024];
 int event_initialised = 0;
 int mouse_pos_x = -1, mouse_pos_y = -1;
 u32 mouse_buttons = 0;
@@ -127,6 +128,7 @@ void sfp_event_init()
 		return;
 	
 	memset(keysel, 0, 1024);
+	memset(waiting_time, 0, 1024);
 	
 	event_initialised = 255;
 }
@@ -136,6 +138,25 @@ int sfp_event_key(int key)
 	sfp_event_init();
 	
 	return keysel[key];
+}
+
+void sfp_event_keywait(int key, int time)
+{
+	sfp_event_init();
+	waiting_time[key]=time;
+}
+
+int sfp_event_getkeywait(int key)
+{
+	sfp_event_init();
+	return waiting_time[key];
+}
+
+void sfp_event_tick()
+{
+	u16 i;
+	for(i=0;i<1024;i++)
+		if(waiting_time[i]>0) waiting_time[i]--;
 }
 
 int sfp_event_getkey()
