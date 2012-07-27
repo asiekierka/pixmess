@@ -6,8 +6,9 @@ LIBS = `sdl-config --libs`
 CFLAGS = -g `sdl-config --cflags`
 LDFLAGS = -g
 BINNAME = c64pixels
+PLATFORM = sdl
 
-OBJS = main.o render.o render_sdl.o misc_sdl.o map.o fixme.o tile.o player.o
+OBJS = main.o event_$(PLATFORM).o fixme.o map.o misc_$(PLATFORM).o player.o render.o render_$(PLATFORM).o tile.o
 INCLUDES = common.h render.h misc.h render_data.h player.h tile.h
 all: $(BINNAME)
 

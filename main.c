@@ -7,6 +7,7 @@ remember to do it often, or everything will turn to crap!
 */
 
 #include "common.h"
+#include "event.h"
 #include "map.h"
 #include "player.h"
 #include "render.h"
