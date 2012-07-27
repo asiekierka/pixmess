@@ -3,8 +3,7 @@
 
 #include "types.h"
 
-enum
-{
+enum {
 	SFP_KEY_NONE = 0,
 	
 	// keys which have ascii codes

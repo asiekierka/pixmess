@@ -19,7 +19,4 @@ typedef struct layer { s32 x,y; u16 w,h; tile_t *tiles; } layer_t;
 
 enum { LAYER_UNALLOC = 0, LAYER_UNUSED = 1, LAYER_USED = 2 };
 
-enum { TILE_DUMMY = 0, TILE_FLOOR = 1, TILE_WALL = 2, TILE_ROOF = 3 };
-
 #endif /* _SFP_TYPES_H_ */
-

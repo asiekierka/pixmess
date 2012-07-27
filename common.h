@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#include "types.h"
 #include "misc.h"
+#include "tile.h"
+#include "types.h"
 
