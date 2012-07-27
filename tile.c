@@ -8,6 +8,19 @@ const u16 tile_preview_data[TILE_TYPES*2] = {
 	177,	15+(7*16)
 };
 
+char* names[TILE_TYPES] = {
+	"Dummy",
+	"Floor",
+	"Wall",
+	"Roof"
+};
+
+inline char* tile_get_name(u8 type)
+{
+	if(type>=TILE_TYPES) return 0;
+	return names[type];
+}
+
 inline u16 tile_get_preview_char(u8 type)
 {
 	if(type>=TILE_TYPES) return 0;

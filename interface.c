@@ -95,11 +95,14 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 void render_type_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
+	u16 mousex = sfp_event_mousex();
+	u16 mousey = sfp_event_mousey();
 
 	// 88x104, 3x4 icons + scroll
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0x000000);
 	// Drawing
 	u8 i,j,tcol,mouse_in;
+	s16 mouse_in_id = -1;
 	u16 px,py;
 	for(i=0;i<12;i++)
 	{
@@ -107,16 +110,27 @@ void render_type_window(void)
 		if(j>=TILE_TYPES) break;
 		px = 8+((i%3)*24);
 		py = 8+((i/3)*24)+(SFP_FIELD_HEIGHT*16-104);
-		mouse_in = inside_rect(sfp_event_mousex(),sfp_event_mousey(),px,py,16,16);
+		mouse_in = inside_rect(mousex,mousey,px-2,py-2,20,20);
 		tcol = tile_get_preview_color(j);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,tile_get_preview_char(j));
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
-		if(mouse_in && lmb) drawing_tile->type = j;
+		if(mouse_in)
+		{
+			mouse_in_id = j;
+			if(lmb) drawing_tile->type = j;
+		}
 	}
 	int tmax = ((TILE_TYPES+2/3)-4);
 	render_scrollbar(80-1,(SFP_FIELD_HEIGHT*16-104),104,(tmax>0?tmax:0));
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0xCCCCCC);
+
+	if(mouse_in_id>=0)
+	{
+		// Tooltip
+		sfp_fill_rect(mousex-1,mousey-10,strlen(tile_get_name(mouse_in_id))*8+2,10,0x000000);
+		sfp_printf_1x(mousex,mousey-9,0x07,0,"%s",tile_get_name(mouse_in_id));
+	}
 }
 void render_char_window(void)
 {
@@ -134,7 +148,7 @@ void render_char_window(void)
 		if(j>255) break;
 		px = 8+((i%3)*24);
 		py = 8+((i/3)*24)+(SFP_FIELD_HEIGHT*16-104);
-		mouse_in = inside_rect(sfp_event_mousex(),sfp_event_mousey(),px,py,16,16);
+		mouse_in = inside_rect(sfp_event_mousex(),sfp_event_mousey(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
 		if(mouse_in && lmb) drawing_tile->chr = j;
