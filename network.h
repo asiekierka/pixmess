@@ -3,7 +3,7 @@
 
 // TODO: winsock support
 #ifdef WIN32
-#error "Winsock not supported yet!"
+#warning "Winsock not supported yet!"
 #else
 #include <sys/time.h>
 #include <sys/types.h>
