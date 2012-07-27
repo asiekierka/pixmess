@@ -9,8 +9,8 @@ BINNAME = c64pixels
 PLATFORM = sdl
 
 OBJS = main.o event.o event_$(PLATFORM).o fixme.o map.o misc_$(PLATFORM).o player.o render.o \
-	render_$(PLATFORM).o tile.o
-INCLUDES = common.h render.h misc.h render_data.h player.h tile.h event.h map.h
+	render_$(PLATFORM).o tile.o network.o
+INCLUDES = common.h render.h misc.h render_data.h player.h tile.h event.h map.h network.h
 all: $(BINNAME)
 
 $(BINNAME): $(OBJS)
