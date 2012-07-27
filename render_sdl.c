@@ -226,9 +226,6 @@ void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p)
 		else
 		for(j = 0; j < 8; j++)
 		{
-			if(j >= maxx)
-				break;
-			
 			if(j < minx || j >= maxx)
 				v++;
 			else
