@@ -138,6 +138,9 @@ enum
 
 int sfp_event_key(int key);
 int sfp_event_getkey();
+int sfp_event_mouse_x();
+int sfp_event_mouse_y();
+int sfp_event_mouse_button(int btn);
 void sfp_event_poll();
 
 #endif /* _EVENT_H_ */

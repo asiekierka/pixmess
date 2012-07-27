@@ -48,28 +48,42 @@ void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p)
 	u32 *v2 = (uint32_t *)(((uint8_t *)v) + screen->pitch);
 	
 	// render!
+	int minx = -x, miny = -y;
+	int maxx = screen->w-x, maxy = screen->h-y;
 	int i,j;
 	int pitchoffs = screen->pitch*2 - 4*2*8;
 	for(i = 0; i < 8; i++)
 	{
+		if(i >= maxy)
+			break;
+		
 		u8 c = *(p++);
 		
-		for(j = 0; j < 8; j++)
+		if(i < miny)
 		{
-			if(c&128)
+			v += 16;
+			v2 += 16;
+		} else {
+			for(j = 0; j < 8; j++)
 			{
-				*(v++) = fg;
-				*(v++) = fg;
-				*(v2++) = fg;
-				*(v2++) = fg;
-			} else {
-				*(v++) = bg;
-				*(v++) = bg;
-				*(v2++) = bg;
-				*(v2++) = bg;
-			}
+				if(j < minx || j >= maxx)
+				{
+					v += 2;
+					v2 += 2;
+				} else if(c&128) {
+					*(v++) = fg;
+					*(v++) = fg;
+					*(v2++) = fg;
+					*(v2++) = fg;
+				} else {
+					*(v++) = bg;
+					*(v++) = bg;
+					*(v2++) = bg;
+					*(v2++) = bg;
+				}
 			
-			c <<= 1;
+				c <<= 1;
+			}
 		}
 		
 		v = (u32 *)(((u8 *)v) + pitchoffs);
@@ -83,15 +97,30 @@ void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p)
 	u32 *v = (u32 *)(screen->pixels + screen->pitch*y + 4*x);
 	
 	// render!
+	int minx = -x, miny = -y;
+	int maxx = screen->w-x, maxy = screen->h-y;
 	int i,j;
 	int pitchoffs = screen->pitch - 4*8;
 	for(i = 0; i < 8; i++)
 	{
+		if(i >= maxy)
+			break;
+		
 		u8 c = *(p++);
 		
+		if(i < miny)
+			v += 8;
+		else
 		for(j = 0; j < 8; j++)
 		{
-			*(v++) = ((c&128) ? fg : bg);
+			if(j >= maxx)
+				break;
+			
+			if(j < minx || j >= maxx)
+				v++;
+			else
+				*(v++) = ((c&128) ? fg : bg);
+			
 			c <<= 1;
 		}
 		

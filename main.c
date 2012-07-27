@@ -58,13 +58,13 @@ int main(int argc, char *argv[])
 		sfp_render_begin();
 		display(player);
 		sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+		sfp_putc_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,1,14,0x02);
 		sfp_render_end();
 	
 		sfp_delay(40);
 		
 		sfp_event_poll();
 	}
-	
 	
 	return 0;
 }

@@ -119,6 +119,7 @@ int keyqueue_end = 0;
 u8 keysel[1024];
 int event_initialised = 0;
 int mouse_pos_x = -1, mouse_pos_y = -1;
+u32 mouse_buttons = 0;
 
 void sfp_event_init()
 {
@@ -150,7 +151,23 @@ int sfp_event_getkey()
 	return ret;
 }
 
-void sfp_event_poll(void)
+int sfp_event_mouse_x()
+{
+	return mouse_pos_x;
+}
+
+int sfp_event_mouse_y()
+{
+	return mouse_pos_y;
+}
+
+// SUPPORTS UP TO 32 BUTTONS WOW THAT'S 1/3 OF THE WAY TOWARDS A KEYBOARD
+int sfp_event_mouse_button(int btn)
+{
+	return (mouse_buttons>>btn)&1;
+}
+
+void sfp_event_poll()
 {
 	sfp_event_init();
 	
@@ -173,6 +190,20 @@ void sfp_event_poll(void)
 			break;
 		case SDL_KEYUP:
 			keysel[keymap_sdl[sdlev.key.keysym.sym]] = 0;
+			break;
+		case SDL_MOUSEMOTION:
+			mouse_pos_x = sdlev.motion.x;
+			mouse_pos_y = sdlev.motion.y;
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			mouse_pos_x = sdlev.button.x;
+			mouse_pos_y = sdlev.button.y;
+			mouse_buttons |= (1<<(sdlev.button.button-1));
+			break;
+		case SDL_MOUSEBUTTONUP:
+			mouse_pos_x = sdlev.button.x;
+			mouse_pos_y = sdlev.button.y;
+			mouse_buttons &= ~(1<<(sdlev.button.button-1));
 			break;
 	}
 }
