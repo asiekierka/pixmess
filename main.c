@@ -28,6 +28,15 @@ void player_move(s8 dx, s8 dy)
 	movement_wait = 2;
 }
 
+s32 get_rootx()
+{
+	return player->x-(SFP_FIELD_WIDTH/2);
+}
+s32 get_rooty()
+{
+	return player->y-(SFP_FIELD_HEIGHT/2);
+}
+
 void display (player_t *p)
 {
 	s32 i;
@@ -64,6 +73,30 @@ void display (player_t *p)
 	sfp_printf_1x(pnamex,pnamey,0x0F,0,"%s",name);
 }
 
+void mouse_placement()
+{
+	s32 bx = get_rootx()+((sfp_event_mousex())/16);
+	s32 by = get_rooty()+((sfp_event_mousey())/16);
+	if(sfp_event_mouse_button(0))
+	{
+		tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
+		tile->type = TILE_WALL;
+		tile->chr = 1;
+		tile->col = 7;
+		tile->data = NULL;
+		map_set_tile(bx,by,*tile);
+	}
+	if(sfp_event_mouse_button(2))
+	{
+		tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
+		tile->type = TILE_FLOOR;
+		tile->chr = 0;
+		tile->col = 0;
+		tile->data = NULL;
+		map_set_tile(bx,by,*tile);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	if(sfp_init_render())
@@ -94,6 +127,8 @@ int main(int argc, char *argv[])
 			if(sfp_event_key(SFP_KEY_RIGHT))
 				player_move(1,0);
 		}
+
+		mouse_placement();
 
 		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
 		

@@ -220,6 +220,7 @@ void sfp_event_poll()
 			case SDL_MOUSEBUTTONDOWN:
 				mouse_pos_x = sdlev.button.x;
 				mouse_pos_y = sdlev.button.y;
+				printf("Got button %d\n",sdlev.button.button);
 				mouse_buttons |= (1<<(sdlev.button.button-1));
 				break;
 			case SDL_MOUSEBUTTONUP:
