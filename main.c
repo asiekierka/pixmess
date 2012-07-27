@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 		sfp_putc_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,1,14,0x02);
 		sfp_render_end();
 	
-		sfp_delay(40);
+		sfp_delay(20);
 		
 		sfp_event_poll();
 	}

@@ -21,13 +21,18 @@ layer_t *layer_new(void)
 		a->tiles[i].type = 0;
 		a->tiles[i].chr = (u16)(rand()%256);
 		a->tiles[i].col = 1+(rand()%15);
+		a->tiles[i].data = NULL;
 	}
 	return a;
 };
 
+layer_t *temp_dummy_layer = NULL; // prevent massive leak + epilepsy in test code --GM
+
 layer_t *layer_dummy_request(s32 x, s32 y)
 {
-	layer_t *a = layer_new();
+	if(temp_dummy_layer == NULL)
+		temp_dummy_layer = layer_new();
+	layer_t *a = temp_dummy_layer;
 	a->x = x; a->y = y;
 	return a;
 };
@@ -129,3 +134,4 @@ void map_set_tile(s32 x, s32 y, tile_t tile)
 	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
 	layer_set_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
 }
+
