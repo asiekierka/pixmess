@@ -8,6 +8,7 @@ remember to do it often, or everything will turn to crap!
 
 #include "common.h"
 #include "event.h"
+#include "interface.h"
 #include "map.h"
 #include "misc.h"
 #include "player.h"
@@ -76,20 +77,22 @@ void display (player_t *p)
 
 void mouse_placement()
 {
-	if(sfp_event_mouse_y()<(SFP_FIELD_HEIGHT*16))
-		sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xCCCCCC);
+	if(sfp_event_mouse_y()>=(SFP_FIELD_HEIGHT*16)) return;
+
+	sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
 	s32 bx = get_rootx()+((sfp_event_mousex())/16);
 	s32 by = get_rooty()+((sfp_event_mousey())/16);
 	if(sfp_event_mouse_button(0))
 	{
-		tile_t tile;
-		tile.type = TILE_WALL;
-		tile.chr = 1;
-		tile.col = 7;
-		tile.data = NULL;
-		map_set_tile(bx,by,tile);
+		map_set_tile(bx,by,*ui_get_tile());
 	}
-	if(sfp_event_mouse_button(2))
+	else if(sfp_event_mouse_button(1))
+	{
+		tile_t *tile = ui_get_tile();
+		tile_t map_tile = map_get_tile(bx,by);
+		memcpy(tile,&map_tile,sizeof(tile_t));
+	}
+	else if(sfp_event_mouse_button(2))
 	{
 		tile_t tile;
 		tile.type = TILE_FLOOR;
