@@ -75,7 +75,7 @@ layer_t *map_get_layer(s32 x, s32 y)
 	for(i=0;i<LAYER_SIZE;i++) {
 		if(layer_set[i]==LAYER_UNUSED)
 		{
-			net_report_unlayer(x,y,i);
+			net_report_unlayer(layers[i]->x,layers[i]->y,i);
 			free(layers[i]);
 			layer_set[i] = LAYER_UNALLOC;
 		}
