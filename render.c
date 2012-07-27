@@ -11,6 +11,11 @@ u8 font[256*8];
 
 u8 render_initialized = 0;
 
+u32 sfp_get_palette(u8 id)
+{
+	return palette[id*3+2] | (palette[id*3+1]<<8) | (palette[id*3]<<16);
+}
+
 int sfp_init_render()
 {
 	// Load defaults.

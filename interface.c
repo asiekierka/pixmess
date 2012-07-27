@@ -22,10 +22,10 @@ u8 ui_is_occupied(u16 x, u16 y)
 	{
 		case 1:
 		case 2:
-			if(x<=88 && y>=(SFP_FIELD_HEIGHT*16)-104) return 1;
+			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-128) return 1;
 			break;
 		case 3:
-			if(x<=80 && y>=(SFP_FIELD_HEIGHT*16)-112) return 1;
+			if(x<=208 && y>=(SFP_FIELD_HEIGHT*16)-66) return 1;
 			break;
 	}
 	return 0;
@@ -98,18 +98,17 @@ void render_type_window(void)
 	u16 mousex = sfp_event_mousex();
 	u16 mousey = sfp_event_mousey();
 
-	// 88x104, 3x4 icons + scroll
-	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0x000000);
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0x000000);
 	// Drawing
 	u8 i,j,tcol,mouse_in;
 	s16 mouse_in_id = -1;
 	u16 px,py;
-	for(i=0;i<12;i++)
+	for(i=0;i<20;i++)
 	{
-		j = i+(scrollbar_pos*3);	
+		j = i+(scrollbar_pos*4);	
 		if(j>=TILE_TYPES) break;
-		px = 8+((i%3)*24);
-		py = 8+((i/3)*24)+(SFP_FIELD_HEIGHT*16-104);
+		px = 8+((i%4)*24);
+		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
 		mouse_in = inside_rect(mousex,mousey,px-2,py-2,20,20);
 		tcol = tile_get_preview_color(j);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,tile_get_preview_char(j));
@@ -120,10 +119,10 @@ void render_type_window(void)
 			if(lmb) drawing_tile->type = j;
 		}
 	}
-	int tmax = ((TILE_TYPES+2/3)-4);
-	render_scrollbar(80-1,(SFP_FIELD_HEIGHT*16-104),104,(tmax>0?tmax:0));
+	int tmax = ((TILE_TYPES+3/4)-4);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(tmax>0?tmax:0));
 
-	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0xCCCCCC);
+	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
 
 	if(mouse_in_id>=0)
 	{
@@ -136,36 +135,60 @@ void render_char_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
 
-	// 88x104, 3x4 icons + scroll
-	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0x000000);
+	// 112x128, 4x5 icons + scroll
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0x000000);
 	// Drawing
 	u8 i,tcol,mouse_in;
 	u16 j,px,py;
 	tcol = drawing_tile->col;
-	for(i=0;i<12;i++)
+	for(i=0;i<20;i++)
 	{
-		j = i+(scrollbar_pos*3);	
+		j = i+(scrollbar_pos*4);	
 		if(j>255) break;
-		px = 8+((i%3)*24);
-		py = 8+((i/3)*24)+(SFP_FIELD_HEIGHT*16-104);
+		px = 8+((i%4)*24);
+		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
 		mouse_in = inside_rect(sfp_event_mousex(),sfp_event_mousey(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
 		if(mouse_in && lmb) drawing_tile->chr = j;
 	}
-	render_scrollbar(80-1,(SFP_FIELD_HEIGHT*16-104),104,(258/3)-4);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(256/4)-4);
 
-	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-104,88,104,0xCCCCCC);
+	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
 }
 void render_color_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
+	int mousex = sfp_event_mousex();
+	int mousey = sfp_event_mousey();
 
-	// 80x112, 2 4x4 8x8 bars, 16x16 preview
-	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-112,80,112,0x000000);
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0x000000);
 	// Drawing
-
-	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-112,80,112,0xCCCCCC);
+	u8 i;
+	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-32,0x0F,0,"Foreground");
+	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-60,0x0F,0,"Background");
+	u8 tfg = drawing_tile->col&15;
+	u8 tbg = drawing_tile->col>>4;
+	for(i=0;i<16;i++)
+	{
+		sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-20+1,10,10,sfp_get_palette(i));
+		sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-48+1,10,10,sfp_get_palette(i));
+		if(i==0 || sfp_get_palette(i)==0x000000)
+		{
+			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-20,12,12,0x555555);
+			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-48,12,12,0x555555);
+		}
+		if(i==tbg)
+			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0xCCCCCC);
+		if(i==tfg)
+			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12,0xCCCCCC);
+		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12) && lmb)
+			tbg = i;
+		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12) && lmb)
+			tfg = i;
+	}
+	drawing_tile->col = (tbg<<4)|tfg;
+	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0xCCCCCC);
 }
 
 void render_ui(void)

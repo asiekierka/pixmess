@@ -11,6 +11,8 @@
 #define SFP_SCREEN_REAL_WIDTH (SFP_SCREEN_WIDTH*16)
 #define SFP_SCREEN_REAL_HEIGHT (SFP_SCREEN_HEIGHT*16)
 
+u32 sfp_get_palette(u8 id);
+
 void sfp_draw_rect(int x, int y, int w, int h, u32 col);
 void sfp_fill_rect(int x, int y, int w, int h, u32 col);
 
