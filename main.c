@@ -9,6 +9,7 @@ remember to do it often, or everything will turn to crap!
 #include "common.h"
 #include "event.h"
 #include "map.h"
+#include "misc.h"
 #include "player.h"
 #include "render.h"
 
@@ -75,6 +76,8 @@ void display (player_t *p)
 
 void mouse_placement()
 {
+	if(sfp_event_mouse_y()<(SFP_FIELD_HEIGHT*16))
+		sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xCCCCCC);
 	s32 bx = get_rootx()+((sfp_event_mousex())/16);
 	s32 by = get_rooty()+((sfp_event_mousey())/16);
 	if(sfp_event_mouse_button(0))
@@ -103,6 +106,7 @@ int main(int argc, char *argv[])
 		return 1;
 
 	map_init();
+	init_ui();
 
 	movement_wait = 0;
 
@@ -112,11 +116,9 @@ int main(int argc, char *argv[])
 	{
 		sfp_render_begin();
 		display(player);
-		if(frame_counter<150) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
-		sfp_printf_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,14,0,"Mouse");
-		sfp_draw_rect(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,16,16,0xFF00FF);
-		sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xFFFFFF);
-		sfp_render_end();
+		render_ui();
+		if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+		mouse_placement();
 
 		if(movement_wait==0)
 		{
@@ -130,12 +132,12 @@ int main(int argc, char *argv[])
 				player_move(1,0);
 		}
 
-		mouse_placement();
-
-		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
 		
 		if(movement_wait>0) movement_wait--;
 		frame_counter++;
+
+		sfp_render_end();
+		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
 
 		sfp_event_poll();
 		sfp_event_tick();
