@@ -114,6 +114,8 @@ int main(int argc, char *argv[])
 		display(player);
 		if(frame_counter<150) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
 		sfp_printf_1x(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,14,0,"Mouse");
+		sfp_draw_rect(sfp_event_mouse_x()-8,sfp_event_mouse_y()-8,16,16,0xFF00FF);
+		sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xFFFFFF);
 		sfp_render_end();
 
 		if(movement_wait==0)

@@ -9,12 +9,115 @@ SDL_Surface *screen;
 
 void sfp_render_draw_rect(int x, int y, int w, int h, u32 col)
 {
-	// FIXME: GM, could you please handle this	
+	int i;
+	
+	// sanity check: w/h MUST BE POSITIVE
+	if(w <= 0 || h <= 0)
+		return;
+	
+	// get x,y TLC/BRC
+	int x1 = x, x2 = x+w-1;
+	int y1 = y, y2 = y+h-1;
+	
+	// don't attempt anything if we can't draw anything
+	if(x2 < 0 || x1 >= screen->w || y2 < 0 || y1 >= screen->h)
+		return;
+	
+	// set some flags
+	int do_l = (x1 >= 0);
+	int do_t = (y1 >= 0);
+	int do_r = (x2 < screen->w);
+	int do_b = (y2 < screen->h);
+	
+	if(!do_l) x1 = 1;
+	if(!do_t) y1 = 0;
+	if(!do_r) x2 = screen->w-2;
+	if(!do_b) y2 = screen->h-1;
+	
+	// save on some redundancy
+	do_r = do_r && x1 != x2;
+	do_b = do_b && y1 != y2;
+	
+	// get our TLC pointer
+	uint32_t *vb = (uint32_t *)(screen->pixels + y1*screen->pitch + x1*4);
+	
+	// now render each line!
+	if(do_t)
+	{
+		uint32_t *v = vb+1;
+		for(i = x1+1; i < x2; i++)
+			*(v++) = col;
+	}
+	
+	if(do_b)
+	{
+		uint32_t *v = (uint32_t *)(screen->pixels + y2*screen->pitch + (x1+1)*4);
+		for(i = x1+1; i < x2; i++)
+			*(v++) = col;
+	}
+	
+	if(do_l)
+	{
+		uint32_t *v = vb;
+		for(i = y1; i <= y2; i++)
+		{
+			*v = col;
+			v = (uint32_t *)(((uint8_t *)v) + screen->pitch);
+		}
+	}
+	
+	if(do_r)
+	{
+		uint32_t *v = (uint32_t *)(screen->pixels + y1*screen->pitch + x2*4);
+		for(i = y1; i <= y2; i++)
+		{
+			*v = col;
+			v = (uint32_t *)(((uint8_t *)v) + screen->pitch);
+		}
+	}
+	
 }
 
 void sfp_render_fill_rect(int x, int y, int w, int h, u32 col)
 {
-	// FIXME: GM, could you please handle this	
+	// clamp x and y TLC
+	if(x < 0)
+	{
+		w += x;
+		x = 0;
+	}
+	
+	if(y < 0)
+	{
+		h += y;
+		y = 0;
+	}
+	
+	// clamp w and h BRC
+	if(x+w > screen->w)
+		w = screen->w-x;
+	if(y+h > screen->h)
+		h = screen->h-y;
+	
+	// don't attempt anything if we can't draw anything
+	if(w <= 0 || h <= 0)
+		return;
+	
+	// get TLC pointer
+	uint32_t *v = (uint32_t *)(screen->pixels + y*screen->pitch + x*4);
+	
+	// draw!
+	int offs = screen->pitch - w*4;
+	for(; h > 0; h--)
+	{
+		int i;
+		
+		// oh how i wish for a STOSD... -O2 might provide it here --GM
+		for(i = 0; i < w; i++)
+			*(v++) = col;
+		
+		v = (uint32_t *)(((uint8_t *)v) + offs);
+	}
 }
 
 int sfp_sdl_error(char *ref)
