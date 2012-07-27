@@ -1,0 +1,216 @@
+Draft for network protocol for pixmess
+by Ben "GreaseMonkey" Russell, 2012
+
+Draft #01
+
+WARNING: This protocol RELIES on TCP being a perfectly byte-accurate stream!
+
+I thought we could do a simple, non-blocking compression inspired by
+ImpulseTracker's pattern packing format.
+
+Each packet from $00-$3F has its own mask field,
+which will be updated as required.
+Packets from $40-$7F will NOT have mask fields.
+
+So basically, each packet is of one of these forms:
+
+	%0ttttttt - use a mask field of 0x00
+	%10tttttt - use current mask field
+	%11tttttt mmmmmmmm - define/use current mask field
+	
+	m = "mask" bits
+	t = packet type
+
+NOTE: The client and server do NOT share mask fields / parameters
+      for their packets!
+
+Types:
+	Note, all types are *little-endian*.
+	
+	Also, fields marked with "$x" where 0 <= x <= 7
+	indicate that, if bit x of the mask is set, we reuse the old value.
+	
+	Fields marked with * indicate that this does not show up
+	in the client->server version.
+	
+	pstr8 = pascal string w/ 8-bit length (u8 len, u8 chars[len])
+	pstr16 = pascal string w/ 16-bit length (u16 len, u8 chars[len])
+	s8 = signed 8-bit int
+	s16 = signed 16-bit int
+	s32 = signed 32-bit int
+	u8 = unsigned 8-bit int
+	u16 = unsigned 16-bit int
+	u32 = unsigned 32-bit int
+	w8 = wraparound 8-bit int
+	w16 = wraparound 16-bit int
+	w32 = wraparound 32-bit int
+
+Compression tips:
+	Assuming masks are set to 0, and no other bits need to be affected.
+	
+	If a u16 does something like:
+	  3 3 2 5 (8 bytes)
+	then, using mask switching, we achieve:
+	  3 * 2 5 (6 + 1 + 1 = 8 bytes)
+	which is no big deal.
+	
+	HOWEVER, if a u8 does something like
+	  3 3 2 5 (4 bytes)
+	then, using mask switching, we achieve:
+	  3 * 2 5 (3 + 1 + 1 = 5 bytes)
+	which is an increase.
+	
+	BE WARY OF THIS.
+	
+	If a u8 goes like this:
+	  3 - 3 (3 bytes)
+	where - means "don't care", it's better to treat it like this:
+	  3 3 3 (1, +1 (mask set), +0 = 2 bytes)
+	rather than:
+	  3 not3 3
+	
+	Of course, if it does
+	  3 - 2 2 (4 bytes)
+	then doing:
+	  3 3 2 2 (1,1,2,0 = 4 bytes)
+	is not as good as doing:
+	  3 2 2 2 (1,1,1,0 = 3 bytes)
+	
+	The first case is the one to watch out for, mostly.
+	
+
+Packets:
+
+$00 = *RESERVED*
+
+$02 = block_set_solid(w16 x$0, w16 y$1, s8 typ$2, s8 col$3, s8 ch$4) *->*
+$03 = block_set_walkable(w16 x$0, w16 y$1, s8 typ$2, s8 col$3, s8 ch$4) *->*
+	Sets the block's status on the solid/walkable sublayers.
+	
+	NOTE: there is currently no sublayering system,
+	      so both will just set the layer value.
+	
+	The reason for splitting a layer into sublayers is to allow pushables
+	to be implemented.
+
+$10 = entity_movement(u16 id*$1, u8 dir$0) *->*
+	Indicates a player's movement in direction dir,
+	where dir is one of:
+	
+	000 = EAST
+	001 = WEST
+	010 = SOUTH
+	011 = NORTH
+	100 = SOUTH-EAST
+	101 = NORTH-WEST
+	110 = SOUTH-WEST
+	111 = NORTH-EAST
+	
+	In other words, in this order:
+	
+	start: ( 1 , 0 )
+	bit 0: (-x ,-y )
+	bit 1: ( y , x )
+	bit 2: (x-y,y+x)
+	
+	(linear algebra ftw)
+
+$11 = entity_creation(u16 id*, s32 x$1, s32 y$2, s16 col$3, s16 ch$4, pstr8 name) S->C
+	Indicates the creation of a new entity.
+
+$40 = layer_request(s32 x, s32 y) C->S
+	Requests a layer chunk from the server.
+
+$41 = layer_start(s32 x, s32 y) S->C
+$42 = layer_data(pstr16 data) S->C
+$43 = layer_end() S->C
+	Sends a GZipped layer chunk in pieces.
+	These three must appear in the correct fashion of $41 ($42)+ $43.
+	LAYER FORMAT YET TO BE ESTABLISHED.
+	
+	Once the layer has been sent, the appropriate $11 "entity_creation"
+	messages need to be sent to the client.
+
+$44 = layer_release(s32 x, s32 y) *->*
+	Indicates that the layer chunk is no longer being handled.
+	C->S: Tells the server to stop sending info about this chunk.
+	S->C: Tells the client it's stopped sending info about this chunk.
+	
+	Note, a C->S release does NOT require a S->C release to be sent back.
+	This is a mechanism to deal with crap clients, tight server limits,
+	OR theoretical algorithmic wraparound issues.
+	
+	Once this has been sent/received, the appropriate
+	$51 "entity_destruction" messages need to be sent to the client.
+	
+	NOTE: This does NOT forward the entity_destruction message to other
+	      players, ESPECIALLY if the client is releasing the layer chunk
+	      it is in! DOING THIS IS A SECURITY HOLE WHICH OPENS THIS GAME UP
+	      FOR INVISIBILITY HACKS!!!
+
+$50 = entity_position(u16 id*, s32 x, s32 y) *->*
+	Resynchronises an entity's position.
+	(I still don't know why we have to do this!
+	 It had to be done in BuildAFort, too. --GM)
+	
+	C->S: Informs the server of the client's current position.
+	S->C: Sets the position of the entity (can be used for teleports!).
+
+$51 = entity_destruction(u16 id) *->*
+	Indicates that the given entity is no longer to be tracked.
+	
+	C->S: Tells the server to stop mentioning this entity.
+	S->C: Tells the client to remove this entity.
+	
+	IMPORTANT: This is NOT a "disconnect" method! (See $7F "kick".)
+	
+	There may be provisions for a "spectator" or "lobby" mode,
+	but for now the client / server should IGNORE requests for
+	removal of the relevant client player ID.
+
+$58 = chat(pstr8 message) *->*
+	C->S: Send a chat message / command.
+	S->C: Adds the given string to the client's chatbox.
+
+$7B = login(u16 version, u16 chr, u16 col, pstr8 name) C->S
+	Attempt to get into the server.
+	
+	Server should respond with one of the following:
+	
+	Failure:
+	- $7F kick(some_reason)
+	
+	Success:
+	- $7E player_id(your_id)
+	- $11 entity_creation(your_id, your_x, your_y,
+			your_col, your_ch, your_name)
+		- sent to you
+		- broadcast to those who are subscribed to your layer chunk
+	- $58 chat("* %s has joined" % (your_name))
+		- broadcast to all
+	
+	NOTE: Creation of other entities only happens on chunk loads!
+
+$7C = ping() *->*
+$7D = pong() *->*
+	If you receive a ping, you send back a pong IMMEDIATELY.
+
+$7E = player_id(u16 id*) *->*
+	C->S: Request current player ID.
+	S->C: Sends a client's player ID to them.
+
+$7F = kick(pstr8 reason) *->*
+	S->C: The client is kicked.
+	C->S: The client has indicated that it has quit.
+	
+	Either way, the connection MUST be severed.
+
+Stuff to expand upon:
+- The reason why I said call them finite "layers" was so that you could
+  actually have movable layers, e.g. TRAINS. However, I guess you could treat
+  it in such a way that there's a "root layerset".
+  
+  With this said, the protocol would need to be adjusted for the creation and
+  removal of such layers, and the ability to select which layer is to be
+  modified and whatnot.
+
