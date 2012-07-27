@@ -4,7 +4,7 @@
 #include "common.h"
 
 inline u16 tile_get_preview_chr(u8 type);
-inline u8 tile_get_preview_col(u8 type);
+inline u8 tile_get_preview_color(u8 type);
 
 inline u8 tile_overlay(tile_t tile);
 inline u8 tile_walkable(tile_t tile);

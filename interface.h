@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+u8 ui_is_occupied(u16 x, u16 y);
 void init_ui(void);
 void render_ui(void);
 tile_t *ui_get_tile(void);
