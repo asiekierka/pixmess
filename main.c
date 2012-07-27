@@ -82,6 +82,9 @@ void mouse_placement()
 	sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
 	s32 bx = get_rootx()+((sfp_event_mousex())/16);
 	s32 by = get_rooty()+((sfp_event_mousey())/16);
+
+	if(!ui_can_mouse_button()) return;
+
 	if(sfp_event_mouse_button(0))
 	{
 		client_set_tile(bx,by,*ui_get_tile());
