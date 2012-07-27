@@ -173,38 +173,40 @@ void sfp_event_poll()
 	
 	SDL_Event sdlev;
 	while(SDL_PollEvent(&sdlev))
-	switch(sdlev.type)
 	{
-		case SDL_QUIT:
-			keysel[SFP_KEY_APP_QUIT] = 1;
-			break;
-		case SDL_KEYDOWN:
-			keysel[keymap_sdl[sdlev.key.keysym.sym]] = 1;
-			keyqueue[keyqueue_end] = keymap_sdl[sdlev.key.keysym.sym];
-			keyqueue_end = (keyqueue_end+1)&255;
-			
-			// if the ring buffer overflows,
-			// knock off the oldest key code
-			if(keyqueue_end == keyqueue_start)
-				keyqueue_start = (keyqueue_start+1)&255;
-			break;
-		case SDL_KEYUP:
-			keysel[keymap_sdl[sdlev.key.keysym.sym]] = 0;
-			break;
-		case SDL_MOUSEMOTION:
-			mouse_pos_x = sdlev.motion.x;
-			mouse_pos_y = sdlev.motion.y;
-			break;
-		case SDL_MOUSEBUTTONDOWN:
-			mouse_pos_x = sdlev.button.x;
-			mouse_pos_y = sdlev.button.y;
-			mouse_buttons |= (1<<(sdlev.button.button-1));
-			break;
-		case SDL_MOUSEBUTTONUP:
-			mouse_pos_x = sdlev.button.x;
-			mouse_pos_y = sdlev.button.y;
-			mouse_buttons &= ~(1<<(sdlev.button.button-1));
-			break;
+		switch(sdlev.type)
+		{
+			case SDL_QUIT:
+				keysel[SFP_KEY_APP_QUIT] = 1;
+				break;
+			case SDL_KEYDOWN:
+				keysel[keymap_sdl[sdlev.key.keysym.sym]] = 1;
+				keyqueue[keyqueue_end] = keymap_sdl[sdlev.key.keysym.sym];
+				keyqueue_end = (keyqueue_end+1)&255;
+				
+				// if the ring buffer overflows,
+				// knock off the oldest key code
+				if(keyqueue_end == keyqueue_start)
+					keyqueue_start = (keyqueue_start+1)&255;
+				break;
+			case SDL_KEYUP:
+				keysel[keymap_sdl[sdlev.key.keysym.sym]] = 0;
+				break;
+			case SDL_MOUSEMOTION:
+				mouse_pos_x = sdlev.motion.x;
+				mouse_pos_y = sdlev.motion.y;
+				break;
+			case SDL_MOUSEBUTTONDOWN:
+				mouse_pos_x = sdlev.button.x;
+				mouse_pos_y = sdlev.button.y;
+				mouse_buttons |= (1<<(sdlev.button.button-1));
+				break;
+			case SDL_MOUSEBUTTONUP:
+				mouse_pos_x = sdlev.button.x;
+				mouse_pos_y = sdlev.button.y;
+				mouse_buttons &= ~(1<<(sdlev.button.button-1));
+				break;
+		}
 	}
 }
 

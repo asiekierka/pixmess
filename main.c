@@ -51,6 +51,8 @@ int main(int argc, char *argv[])
 	if(sfp_init_render())
 		return 1;
 
+	map_init();
+
 	player = player_get(PLAYER_SELF);
 
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))

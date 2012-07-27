@@ -5,6 +5,7 @@
 
 // TODO these defintions should have a file later on, maybe
 void net_report_layer(s32 x, s32 y, u8 position);
+void net_report_unlayer(s32 x, s32 y, u8 position);
 
 layer_t *layers[LAYER_SIZE];
 u8 layer_set[LAYER_SIZE];
@@ -26,16 +27,19 @@ layer_t *layer_new(void)
 	return a;
 };
 
-layer_t *temp_dummy_layer = NULL; // prevent massive leak + epilepsy in test code --GM
-
 layer_t *layer_dummy_request(s32 x, s32 y)
 {
-	if(temp_dummy_layer == NULL)
-		temp_dummy_layer = layer_new();
-	layer_t *a = temp_dummy_layer;
+	layer_t *a = layer_new();
 	a->x = x; a->y = y;
 	return a;
 };
+
+void map_init(void)
+{
+	u8 i;
+	for(i=0;i<LAYER_SIZE;i++)
+		layer_set[i]=LAYER_UNALLOC;
+}
 
 layer_t *map_get_layer(s32 x, s32 y)
 {
@@ -47,12 +51,13 @@ layer_t *map_get_layer(s32 x, s32 y)
 	}
 	// We didn't find that layer
 	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]==LAYER_UNALLOC)
-		{
-			layers[i] = (layer_t*)malloc(sizeof(layer_t));
-			layer_set[i] = LAYER_UNUSED;
-		}
 		if(layer_set[i]==LAYER_UNUSED)
+		{
+			net_report_unlayer(x,y,i);
+			free(layers[i]);
+			layer_set[i] = LAYER_UNALLOC;
+		}
+		if(layer_set[i]==LAYER_UNALLOC)
 			if(layers[i] = layer_request(x,y))
 			{
 				if(layers[i]->x != x || layers[i]->y != y)
@@ -70,7 +75,7 @@ void map_layer_set_unused(s32 x, s32 y)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]==LAYER_USED && layers[i]->x==x && layers[i]->y==y)
+		if(layer_set[i]!=LAYER_UNALLOC && layers[i]->x==x && layers[i]->y==y)
 		{
 			layer_set[i] = LAYER_UNUSED;
 			return;
@@ -82,7 +87,7 @@ void map_layer_set_used(s32 x, s32 y)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]==LAYER_USED && layers[i]->x==x && layers[i]->y==y)
+		if(layer_set[i]!=LAYER_UNALLOC && layers[i]->x==x && layers[i]->y==y)
 		{
 			layer_set[i] = LAYER_USED;
 			return;
@@ -96,7 +101,8 @@ void map_layer_set_used_rendered(s32 x, s32 y)
 	s32 chunk_y = y/LAYER_HEIGHT;
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) 
-		layer_set[i] = LAYER_UNUSED;
+		if(layer_set[i]!=LAYER_UNALLOC)
+			layer_set[i] = LAYER_UNUSED;
 	// Yay for optimization! Lol
 	map_layer_set_used(chunk_x-1,chunk_y-1);
 	map_layer_set_used(chunk_x,chunk_y-1);

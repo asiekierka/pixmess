@@ -7,6 +7,7 @@
 #define LAYER_WIDTH 64
 #define LAYER_HEIGHT 64
 
+void map_init(void);
 layer_t *layer_new(void);
 layer_t *map_get_layer(s32 x, s32 y);
 void map_layer_set_unused(s32 x, s32 y);
