@@ -41,6 +41,15 @@ void sfp_render_begin()
 }
 void sfp_render_end() { sfp_render_render_end(); }
 
+void sfp_draw_rect(int x, int y, int w, int h, u32 col)
+{
+	sfp_render_draw_rect(x,y,w,h,col);
+}
+void sfp_fill_rect(int x, int y, int w, int h, u32 col)
+{
+	sfp_render_fill_rect(x,y,w,h,col);
+}
+
 #define SFP_DEFINE_PUTC(putctype,putcsize) \
 void sfp_putc_##putctype(int x, int y, u8 bg, u8 fg, u16 chr) \
 { \

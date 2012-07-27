@@ -3,9 +3,19 @@
 #define I_WANT_INTERNAL_RENDER_STUFF
 #include "render.h"
 
-// Rendering code by GreaseMonkey
+// Rendering code by GreaseMonkey and somewhat asiekierka
 
 SDL_Surface *screen;
+
+void sfp_render_draw_rect(int x, int y, int w, int h, u32 col)
+{
+	// FIXME: GM, could you please handle this	
+}
+
+void sfp_render_fill_rect(int x, int y, int w, int h, u32 col)
+{
+	// FIXME: GM, could you please handle this	
+}
 
 int sfp_sdl_error(char *ref)
 {
