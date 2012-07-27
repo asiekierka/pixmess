@@ -19,9 +19,18 @@ layer_t *layer_new(void)
 	int i;
 	for(i=0;i<LAYER_WIDTH*LAYER_HEIGHT;i++)
 	{
-		a->tiles[i].type = 0;
-		a->tiles[i].chr = (u16)(rand()%256);
-		a->tiles[i].col = 1+(rand()%15);
+		if(rand()%32 == 17)
+		{
+			a->tiles[i].type = TILE_WALL;
+			a->tiles[i].chr = (u16)(rand()%256);
+			a->tiles[i].col = 1+(rand()%15);
+		}
+		else
+		{
+			a->tiles[i].type = TILE_FLOOR;
+			a->tiles[i].chr = 0;
+			a->tiles[i].col = 0;
+		}
 		a->tiles[i].data = NULL;
 	}
 	return a;
