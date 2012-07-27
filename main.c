@@ -79,21 +79,21 @@ void mouse_placement()
 	s32 by = get_rooty()+((sfp_event_mousey())/16);
 	if(sfp_event_mouse_button(0))
 	{
-		tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
-		tile->type = TILE_WALL;
-		tile->chr = 1;
-		tile->col = 7;
-		tile->data = NULL;
-		map_set_tile(bx,by,*tile);
+		tile_t tile;
+		tile.type = TILE_WALL;
+		tile.chr = 1;
+		tile.col = 7;
+		tile.data = NULL;
+		map_set_tile(bx,by,tile);
 	}
 	if(sfp_event_mouse_button(2))
 	{
-		tile_t *tile = (tile_t *)malloc(sizeof(tile_t));
-		tile->type = TILE_FLOOR;
-		tile->chr = 0;
-		tile->col = 0;
-		tile->data = NULL;
-		map_set_tile(bx,by,*tile);
+		tile_t tile;
+		tile.type = TILE_FLOOR;
+		tile.chr = 0;
+		tile.col = 0;
+		tile.data = NULL;
+		map_set_tile(bx,by,tile);
 	}
 }
 
