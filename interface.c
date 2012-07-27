@@ -47,6 +47,7 @@ void render_ui(void)
 	sfp_putc_block_2x(4,SFP_FIELD_HEIGHT,0,8,179);
 	sfp_putc_block_2x(6,SFP_FIELD_HEIGHT,0,8,179);
 	sfp_putc_block_2x(5,SFP_FIELD_HEIGHT,(drawing_tile->col>>4),(drawing_tile->col&15),drawing_tile->chr);
+
 	// ACTIVE ELEMENTS - Wundericons
 	sfp_putc_block_2x(1,SFP_FIELD_HEIGHT,0+COLHL(whichHL,activeUI,1),4+COLHL(whichHL,activeUI,1),84);
 	sfp_putc_block_2x(2,SFP_FIELD_HEIGHT,1+COLHL(whichHL,activeUI,2),7+COLHL(whichHL,activeUI,2),2);

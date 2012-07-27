@@ -84,7 +84,7 @@ void mouse_placement()
 	s32 by = get_rooty()+((sfp_event_mousey())/16);
 	if(sfp_event_mouse_button(0))
 	{
-		map_set_tile(bx,by,*ui_get_tile());
+		client_set_tile(bx,by,*ui_get_tile());
 	}
 	else if(sfp_event_mouse_button(1))
 	{
@@ -99,7 +99,7 @@ void mouse_placement()
 		tile.chr = 0;
 		tile.col = 0;
 		tile.data = NULL;
-		map_set_tile(bx,by,tile);
+		client_set_tile(bx,by,tile);
 	}
 }
 
