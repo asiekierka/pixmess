@@ -19,14 +19,24 @@ layer_t *layer_new(void)
 	int i;
 	for(i=0;i<LAYER_WIDTH*LAYER_HEIGHT;i++)
 	{
-		if(rand()%32 == 17)
+		int randomizer = rand()%64;
+		if(randomizer == 42 || randomizer == 24)
 		{
 			a->tiles[i].type = TILE_WALL;
 			// Hacks to skip empties.
 			a->tiles[i].chr = 32;
 			while(a->tiles[i].chr == 32)
 				a->tiles[i].chr = (u16)(rand()%254)+1;
-			a->tiles[i].col = 1+(rand()%15);
+			a->tiles[i].col = (1+(rand()%15))+((rand()%8)<<4);
+		}
+		else if(randomizer == 17)
+		{
+			a->tiles[i].type = TILE_ROOF;
+			// Hacks to skip empties.
+			a->tiles[i].chr = 32;
+			while(a->tiles[i].chr == 32)
+				a->tiles[i].chr = (u16)(rand()%254)+1;
+			a->tiles[i].col = 240+(rand()%15);
 		}
 		else
 		{

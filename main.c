@@ -56,7 +56,7 @@ void display (player_t *p)
 	// Early player code.
 	u32 px = p->x-orx;
 	u32 py = p->y-ory;
-	sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
+	if(!tile_overlay(map_get_tile(p->x,p->y))) sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
 	char* name = "Gamemaster";
 
 	u32 pnamex = (px*16)-((strlen(name))*4)+8;
