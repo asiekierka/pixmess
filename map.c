@@ -22,7 +22,10 @@ layer_t *layer_new(void)
 		if(rand()%32 == 17)
 		{
 			a->tiles[i].type = TILE_WALL;
-			a->tiles[i].chr = (u16)(rand()%256);
+			// Hacks to skip empties.
+			a->tiles[i].chr = 32;
+			while(a->tiles[i].chr == 32)
+				a->tiles[i].chr = (u16)(rand()%254)+1;
 			a->tiles[i].col = 1+(rand()%15);
 		}
 		else

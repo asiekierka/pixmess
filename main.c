@@ -38,18 +38,17 @@ void display (player_t *p)
 	s32 ory;
 	tile_t tile;
 	map_layer_set_used_rendered(rx,ry);
-	rx -= (SFP_SCREEN_WIDTH)/2;
-	rx--; // HACK
-	ry -= (SFP_SCREEN_HEIGHT)/2;
+	rx -= (SFP_FIELD_WIDTH)/2;
+	ry -= (SFP_FIELD_HEIGHT)/2;
 	orx = rx;
 	ory = ry;
-	for(j=0;j<SFP_SCREEN_HEIGHT;j++)
+	for(j=0;j<SFP_FIELD_HEIGHT;j++)
 	{
-		for(i=0;i<SFP_SCREEN_WIDTH;i++)
+		for(i=0;i<SFP_FIELD_WIDTH;i++)
 		{
-			rx++;
 			tile = map_get_tile(rx,ry);
 			sfp_putc_block_2x(i,j,(tile.col>>4),(tile.col&15),tile.chr);
+			rx++;
 		}
 		rx = orx;
 		ry++;
@@ -57,11 +56,11 @@ void display (player_t *p)
 	// Early player code.
 	u32 px = p->x-orx;
 	u32 py = p->y-ory;
-	sfp_putc_block_2x((SFP_SCREEN_WIDTH)/2,(SFP_SCREEN_HEIGHT)/2,(p->col>>4),(p->col&15),p->chr);
+	sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
 	char* name = "Gamemaster";
 
-	u32 pnamex = (((SFP_SCREEN_WIDTH)/2)*16)-((strlen(name))*4)+8;
-	u32 pnamey = (((SFP_SCREEN_HEIGHT)/2)*16)-10;
+	u32 pnamex = (px*16)-((strlen(name))*4)+8;
+	u32 pnamey = (py*16)-10;
 	sfp_printf_1x(pnamex,pnamey,0x0F,0,"%s",name);
 }
 
