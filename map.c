@@ -1,9 +1,8 @@
 #include "common.h"
 #include "map.h"
+#include "network.h"
 
 // TODO these defintions should have a file later on, maybe
-void net_report_layer(s32 x, s32 y, u8 position);
-void net_report_unlayer(s32 x, s32 y, u8 position);
 
 layer_t *layers[LAYER_SIZE];
 u8 layer_set[LAYER_SIZE];
@@ -112,15 +111,25 @@ layer_t *map_get_empty_layer(s32 x, s32 y)
 	for(i=0;i<LAYER_SIZE;i++) {
 		if(layer_set[i]==LAYER_UNUSED)
 			layer_unload(i);
+		if(layer_set[i]==LAYER_REQUESTED)
+			layer_unload(i);
 		if(layer_set[i]==LAYER_UNALLOC)
-			if(layers[i] = layer_dummy_request(x,y))
+		{
+			net_report_layer(x,y,i);
+			
+			// TODO: factor this code out --GM
+			layers[i] = layer_dummy_request(x,y);
+			
+			if(layers[i] == NULL)
 			{
+				layer_set[i] = LAYER_REQUESTED;
+			} else {
 				if(layers[i]->x != x || layers[i]->y != y)
 					return NULL;
 				layer_set[i] = LAYER_USED;
-				net_report_layer(x,y,i);
 				return layers[i];
 			}
+		}
 	}
 	return NULL;
 }

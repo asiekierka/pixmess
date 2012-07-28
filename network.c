@@ -1,22 +1,41 @@
 #include "common.h"
 #include "network.h"
 
-int network_initialised = 0;
+int net_sockfd = 0;
+int server_sockfd = 0;
 
-int network_init()
+int net_initialised = 0;
+
+int net_init()
 {
-	if(network_initialised)
+	if(net_initialised)
 		return 0;
 	
 	// Only Windows requires special initialisation. --GM
 	
-	network_initialised = 255;
+	net_initialised = 255;
 	return 0;
+}
+
+void net_report_layer(s32 x, s32 y, u8 position)
+{
+	if(net_init())
+		return;
+	
+	printf("net_report_layer: %d,%d, pos %d\n",x,y,position);
+}
+
+void net_report_unlayer(s32 x, s32 y, u8 position)
+{
+	if(net_init())
+		return;
+	
+	printf("net_report_unlayer: %d,%d, pos %d\n",x,y,position);
 }
 
 int server_init()
 {
-	if(network_init())
+	if(net_init())
 		return 1;
 }
 

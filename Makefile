@@ -16,7 +16,7 @@ OBJS = main.o event.o event_$(PLATFORM).o fixme.o map.o misc_$(PLATFORM).o playe
 	render.o render_$(RENDERER).o tile.o interface.o network.o client.o server.o
 
 INCLUDES = common.h render.h misc.h render_data.h player.h tile.h event.h map.h \
-	interface.h network.h client.h server.h
+	interface.h network.h client.h server.h types.h
 all: $(BINNAME)
 
 $(BINNAME): $(OBJS)

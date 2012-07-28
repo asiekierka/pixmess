@@ -14,5 +14,8 @@
 #include <arpa/inet.h>
 #endif
 
+void net_report_layer(s32 x, s32 y, u8 position);
+void net_report_unlayer(s32 x, s32 y, u8 position);
+
 #endif /* _NETWORK_H_ */
 

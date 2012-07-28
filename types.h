@@ -21,6 +21,12 @@ typedef struct player
 	u16 chr;
 } player_t;
 
+typedef struct netplayer
+{
+	u16 id;
+	int sockfd;
+} netplayer_t;
+
 typedef struct tile tile_t;
 struct tile
 {
@@ -43,6 +49,7 @@ enum
 	LAYER_UNALLOC = 0,
 	LAYER_UNUSED,
 	LAYER_USED,
+	LAYER_REQUESTED,
 };
 
 #endif /* _SFP_TYPES_H_ */
