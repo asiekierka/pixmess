@@ -213,6 +213,9 @@ void render_ui(void)
 	// First, grab mouse stuff.
 	int mousex = sfp_event_mouse_x();
 	int mousey = sfp_event_mouse_y();
+
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16,SFP_SCREEN_REAL_WIDTH,16,0x000000);
+
 	// Prepare some variables.
 	u8 whichHL = 0;
 	if(inside_rect(mousex,mousey,1*16,SFP_FIELD_HEIGHT*16,UI_BUTTONS*16,1*16))
