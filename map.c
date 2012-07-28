@@ -10,6 +10,31 @@ void net_report_unlayer(s32 x, s32 y, u8 position);
 layer_t *layers[LAYER_SIZE];
 u8 layer_set[LAYER_SIZE];
 
+void layer_free(layer_t *layer)
+{
+	int i;
+	tile_t *t, *t2;
+	
+	for(i = 0; i < layer->w*layer->h; i++)
+	{
+		// free "under" stuff
+		for(t = layer->tiles[i].under; t != NULL; t = t2)
+		{
+			t2 = t->under;
+			if(t->data != NULL)
+				free(t->data);
+			free(t);
+		}
+		
+		t = &(layer->tiles[i]);
+		
+		if(t->data != NULL)
+			free(t->data);
+	}
+	
+	free(layer);
+}
+
 layer_t *layer_new(void)
 {
 	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
@@ -40,10 +65,11 @@ layer_t *layer_new(void)
 		}
 		else
 		{
-			a->tiles[i].type = TILE_FLOOR;
+			a->tiles[i].type = TILE_DUMMY;
 			a->tiles[i].chr = 0;
 			a->tiles[i].col = 0;
 		}
+		a->tiles[i].under = NULL;
 		a->tiles[i].data = NULL;
 	}
 	return a;
@@ -76,7 +102,7 @@ layer_t *map_get_layer(s32 x, s32 y)
 		if(layer_set[i]==LAYER_UNUSED)
 		{
 			net_report_unlayer(layers[i]->x,layers[i]->y,i);
-			free(layers[i]);
+			layer_free(layers[i]);
 			layer_set[i] = LAYER_UNALLOC;
 		}
 		if(layer_set[i]==LAYER_UNALLOC)
@@ -137,14 +163,72 @@ void map_layer_set_used_rendered(s32 x, s32 y)
 	map_layer_set_used(chunk_x+1,chunk_y+1);
 }
 
+tile_t *layer_get_tile_ref(u8 x, u8 y, layer_t *layer)
+{
+	return &(layer->tiles[y*LAYER_WIDTH+x]);
+}
+
 tile_t layer_get_tile(u8 x, u8 y, layer_t *layer)
 {
-	return layer->tiles[y*LAYER_WIDTH+x];
+	return *layer_get_tile_ref(x, y, layer);
 }
 
 void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 {
-	layer->tiles[y*LAYER_WIDTH+x] = tile;
+	// NOTE: preserve "under" reference!
+	tile_t *mt = layer_get_tile_ref(x, y, layer);
+	tile_t *under = mt->under;
+	*mt = tile;
+	mt->under = under;
+}
+
+void layer_push_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
+{
+	// get tile reference
+	tile_t *old = layer_get_tile_ref(x, y, layer);
+	
+	// if we're not stacking, just use layer_set_tile
+	if(old->type == TILE_DUMMY || old->type == tile.type)
+		return layer_set_tile(x, y, tile, layer);
+	
+	// duplicate the top tile if necessary
+	tile_t *new = malloc(sizeof(tile_t));
+	
+	// if the malloc fails, front-dismount the unicycle gracefully
+	// (in other words, drop everything and leave)
+	if(new == NULL)
+	{
+		fprintf(stderr, "FATAL: COULD NOT ALLOCATE MEMORY FOR NEW TILE!\n");
+		perror("layer_push_tile");
+		exit(44); // 4 to indicate death, 44 to indicate we're DYING HORRIBLY
+	}
+	
+	// ok, copy old tile across to, *ahem*, "new"
+	memcpy(new, old, sizeof(tile_t));
+	
+	// now copy "tile" across to, *ahem*, "old"
+	memcpy(old, &tile, sizeof(tile_t));
+	
+	// set the "under" field
+	old->under = new;
+}
+
+void layer_pop_tile(u8 x, u8 y, layer_t *layer)
+{
+	tile_t *t = layer_get_tile_ref(x, y, layer);
+	tile_t *under = t->under;
+	if(under == NULL)
+	{
+		t->type = TILE_DUMMY;
+		t->chr = 0x20;
+		t->col = 0x07;
+		if(t->data != NULL)
+			free(t->data);
+		t->data = NULL;
+	} else {
+		memcpy(t, under, sizeof(tile_t));
+		free(under);
+	}
 }
 
 tile_t map_get_tile(s32 x, s32 y)
@@ -161,5 +245,21 @@ void map_set_tile(s32 x, s32 y, tile_t tile)
 	s32 chunk_y = y/LAYER_HEIGHT;
 	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
 	layer_set_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
+}
+
+void map_push_tile(s32 x, s32 y, tile_t tile)
+{
+	s32 chunk_x = x/LAYER_WIDTH;
+	s32 chunk_y = y/LAYER_HEIGHT;
+	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
+	layer_push_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
+}
+
+void map_pop_tile(s32 x, s32 y)
+{
+	s32 chunk_x = x/LAYER_WIDTH;
+	s32 chunk_y = y/LAYER_HEIGHT;
+	layer_t *chunk = map_get_layer(chunk_x,chunk_y);
+	layer_pop_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),chunk);
 }
 

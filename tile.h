@@ -10,8 +10,14 @@ inline u8 tile_get_preview_color(u8 type);
 inline u8 tile_overlay(tile_t tile);
 inline u8 tile_walkable(tile_t tile);
 
-#define TILE_TYPES 4
-
-enum { TILE_DUMMY = 0, TILE_FLOOR = 1, TILE_WALL = 2, TILE_ROOF = 3 };
+enum
+{
+	TILE_DUMMY = 0,
+	TILE_FLOOR,
+	TILE_WALL,
+	TILE_ROOF,
+	
+	TILE_TYPES
+};
 
 #endif /* _TILE_H_ */

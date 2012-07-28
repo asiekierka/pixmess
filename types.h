@@ -13,10 +13,36 @@ typedef int16_t s16;
 typedef int8_t s8;
 
 // Mental note: chr, not char
-typedef struct player { s32 x,y; u16 id; u8 col; u16 chr; } player_t;
-typedef struct tile { u8 type; u16 chr; u8 col; u8 *data; } tile_t;
-typedef struct layer { s32 x,y; u16 w,h; tile_t *tiles; } layer_t;
+typedef struct player
+{
+	s32 x,y;
+	u16 id;
+	u8 col;
+	u16 chr;
+} player_t;
 
-enum { LAYER_UNALLOC = 0, LAYER_UNUSED = 1, LAYER_USED = 2 };
+typedef struct tile tile_t;
+struct tile
+{
+	u8 type;
+	u16 chr;
+	u8 col;
+	tile_t *under;
+	u8 *data;
+};
+
+typedef struct layer
+{
+	s32 x,y;
+	u16 w,h;
+	tile_t *tiles;
+} layer_t;
+
+enum
+{
+	LAYER_UNALLOC = 0,
+	LAYER_UNUSED,
+	LAYER_USED,
+};
 
 #endif /* _SFP_TYPES_H_ */

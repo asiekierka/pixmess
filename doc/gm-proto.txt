@@ -1,12 +1,10 @@
 Draft for network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #02
+Draft #02.01
 
 Layers:
 	We currently don't have a format for these yet.
-	
-	
 
 Types:
 	Note, all types are *little-endian*.
@@ -127,9 +125,11 @@ $7B = login(u16 version, u16 chr, u16 col, pstr8 name) C->S
 	
 	NOTE: Creation of other entities only happens on chunk loads!
 
-$7C = ping() *->*
-$7D = pong() *->*
+$7C = ping(w8 pktid) *->*
+$7D = pong(w8 pktid) *->*
 	If you receive a ping, you send back a pong IMMEDIATELY.
+	
+	pktid follows a rolling counter.
 
 $7E = player_id(u16 id*) *->*
 	C->S: Request current player ID.

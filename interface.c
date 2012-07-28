@@ -62,8 +62,8 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 	u16 part_pos = scrollbar_pos*(h-32)/max;
 	sfp_fill_rect(x,y+8+part_pos,8,16,0xCCCCCC);
 
-	u16 mousex = sfp_event_mousex();
-	u16 mousey = sfp_event_mousey();
+	u16 mousex = sfp_event_mouse_x();
+	u16 mousey = sfp_event_mouse_y();
 	u8 lmb = sfp_event_mouse_button(0);
 
 	// Moving the scrollbar.
@@ -95,8 +95,8 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 void render_type_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
-	u16 mousex = sfp_event_mousex();
-	u16 mousey = sfp_event_mousey();
+	u16 mousex = sfp_event_mouse_x();
+	u16 mousey = sfp_event_mouse_y();
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0x000000);
 	// Drawing
@@ -147,7 +147,7 @@ void render_char_window(void)
 		if(j>255) break;
 		px = 8+((i%4)*24);
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
-		mouse_in = inside_rect(sfp_event_mousex(),sfp_event_mousey(),px-2,py-2,20,20);
+		mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
 		if(mouse_in && lmb) drawing_tile->chr = j;
@@ -159,8 +159,8 @@ void render_char_window(void)
 void render_color_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
-	int mousex = sfp_event_mousex();
-	int mousey = sfp_event_mousey();
+	int mousex = sfp_event_mouse_x();
+	int mousey = sfp_event_mouse_y();
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0x000000);
 	// Drawing
@@ -194,8 +194,8 @@ void render_color_window(void)
 void render_ui(void)
 {
 	// First, grab mouse stuff.
-	int mousex = sfp_event_mousex();
-	int mousey = sfp_event_mousey();
+	int mousex = sfp_event_mouse_x();
+	int mousey = sfp_event_mouse_y();
 	// Prepare some variables.
 	u8 whichHL = 0;
 	if(inside_rect(mousex,mousey,1*16,SFP_FIELD_HEIGHT*16,UI_BUTTONS*16,1*16))

@@ -77,33 +77,45 @@ void display (player_t *p)
 
 void mouse_placement()
 {
-	if(ui_is_occupied(sfp_event_mousex(),sfp_event_mousey())) return;
-
+	static int pressed_0 = 0;
+	static int pressed_1 = 0;
+	static int pressed_2 = 0;
+	
+	static int lastx = -10000;
+	static int lasty = -10000;
+	
+	int pressing_0 = sfp_event_mouse_button(0);
+	int pressing_1 = sfp_event_mouse_button(1);
+	int pressing_2 = sfp_event_mouse_button(2);
+	
+	if(ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y())) return;
+	
 	sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
-	s32 bx = get_rootx()+((sfp_event_mousex())/16);
-	s32 by = get_rooty()+((sfp_event_mousey())/16);
-
+	s32 bx = get_rootx()+((sfp_event_mouse_x())/16);
+	s32 by = get_rooty()+((sfp_event_mouse_y())/16);
+	
 	if(!ui_can_mouse_button()) return;
-
-	if(sfp_event_mouse_button(0))
+	
+	if(pressing_0 && (lastx != bx || lasty != by || !pressed_0))
 	{
-		client_set_tile(bx,by,*ui_get_tile());
+		client_push_tile(bx,by,*ui_get_tile());
 	}
-	else if(sfp_event_mouse_button(1))
+	else if(pressing_1 && (lastx != bx || lasty != by || !pressed_1))
 	{
 		tile_t *tile = ui_get_tile();
 		tile_t map_tile = map_get_tile(bx,by);
 		memcpy(tile,&map_tile,sizeof(tile_t));
 	}
-	else if(sfp_event_mouse_button(2))
+	else if(pressing_2 && (lastx != bx || lasty != by || !pressed_2))
 	{
-		tile_t tile;
-		tile.type = TILE_FLOOR;
-		tile.chr = 0;
-		tile.col = 0;
-		tile.data = NULL;
-		client_set_tile(bx,by,tile);
+		client_pop_tile(bx,by);
 	}
+	
+	pressed_0 = pressing_0;
+	pressed_1 = pressing_1;
+	pressed_2 = pressing_2;
+	lastx = bx;
+	lasty = by;
 }
 
 int main(int argc, char *argv[])
@@ -151,4 +163,3 @@ int main(int argc, char *argv[])
 	
 	return 0;
 }
-
