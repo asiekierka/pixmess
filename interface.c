@@ -103,6 +103,16 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 	}
 }
 
+void render_type_tooltip(u8 id)
+{
+	u16 mousex = sfp_event_mouse_x();
+	u16 mousey = sfp_event_mouse_y();
+
+	// Tooltip
+	sfp_fill_rect(mousex-1,mousey-10,strlen(tile_get_name(id))*8+2,10,0x000000);
+	sfp_printf_1x(mousex,mousey-9,0x07,0,"%s",tile_get_name(id));
+}
+
 void render_type_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
@@ -123,7 +133,7 @@ void render_type_window(void)
 		mouse_in = inside_rect(mousex,mousey,px-2,py-2,20,20);
 		tcol = tile_get_preview_color(j);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,tile_get_preview_char(j));
-		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
+		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:(drawing_tile->type==j?0xAAAAAA:0x555555)));
 		if(mouse_in)
 		{
 			mouse_in_id = j;
@@ -136,11 +146,7 @@ void render_type_window(void)
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
 
 	if(mouse_in_id>=0)
-	{
-		// Tooltip
-		sfp_fill_rect(mousex-1,mousey-10,strlen(tile_get_name(mouse_in_id))*8+2,10,0x000000);
-		sfp_printf_1x(mousex,mousey-9,0x07,0,"%s",tile_get_name(mouse_in_id));
-	}
+		render_type_tooltip(mouse_in_id);
 }
 void render_char_window(void)
 {
@@ -160,7 +166,7 @@ void render_char_window(void)
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-152);
 		mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
-		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
+		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:(drawing_tile->chr==j?0xAAAAAA:0x555555)));
 		if(mouse_in && lmb) drawing_tile->chr = j;
 	}
 	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,(256/4)-4);
@@ -246,6 +252,10 @@ void render_ui(void)
 	}
 	if(mouse_left_down==0 && sfp_event_mouse_button(0)) mouse_left_down = 1;
 	if(mouse_left_down==1 && !sfp_event_mouse_button(0)) mouse_left_down = 0;
+
+	// Tooltip
+	if(inside_rect(mousex,mousey,5*16,SFP_FIELD_HEIGHT*16,16,16))
+		render_type_tooltip(drawing_tile->type);
 }
 
 void init_ui(void)
