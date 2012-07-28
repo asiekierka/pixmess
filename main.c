@@ -138,13 +138,13 @@ int main(int argc, char *argv[])
 
 		if(movement_wait==0)
 		{
-			if(sfp_event_key(SFP_KEY_UP))
+			if(sfp_event_key(SFP_KEY_W))
 				player_move(0,-1);
-			if(sfp_event_key(SFP_KEY_DOWN))
+			if(sfp_event_key(SFP_KEY_S))
 				player_move(0,1);
-			if(sfp_event_key(SFP_KEY_LEFT))
+			if(sfp_event_key(SFP_KEY_A))
 				player_move(-1,0);
-			if(sfp_event_key(SFP_KEY_RIGHT))
+			if(sfp_event_key(SFP_KEY_D))
 				player_move(1,0);
 		}
 
