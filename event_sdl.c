@@ -121,6 +121,7 @@ u8 waiting_time[1024];
 int event_initialised = 0;
 int mouse_pos_x = -1, mouse_pos_y = -1;
 u32 mouse_buttons = 0;
+u32 mouse_wheels = 0;
 
 void sfp_event_init()
 {
@@ -187,6 +188,15 @@ int sfp_event_mouse_button(int btn)
 {
 	return (mouse_buttons>>btn)&1;
 }
+int sfp_event_mouse_button_press(int btn)
+{
+	if((mouse_wheels>>btn)&1)
+	{
+		mouse_wheels &= ~(1<<btn);
+		return 1;
+	}
+	return 0;
+}
 
 void sfp_event_poll()
 {
@@ -220,8 +230,8 @@ void sfp_event_poll()
 			case SDL_MOUSEBUTTONDOWN:
 				mouse_pos_x = sdlev.button.x;
 				mouse_pos_y = sdlev.button.y;
-				printf("Got button %d\n",sdlev.button.button);
 				mouse_buttons |= (1<<(sdlev.button.button-1));
+				mouse_wheels |= (1<<(sdlev.button.button-1));
 				break;
 			case SDL_MOUSEBUTTONUP:
 				mouse_pos_x = sdlev.button.x;

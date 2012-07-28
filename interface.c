@@ -72,14 +72,24 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 	{
 		if(scrollbar_mouse_cooldown == 0)
 		{
-			if(scrollbar_pos>0 && inside_rect(mousex,mousey,x,y,8,8) && lmb)
-				{ scrollbar_pos--; scrollbar_mouse_cooldown = 4; }
-			else if(scrollbar_pos<(max-1) && inside_rect(mousex,mousey,x,y+h-8,8,8) && lmb)
-				{ scrollbar_pos++, scrollbar_mouse_cooldown = 4; }
-			else if(inside_rect(mousex,mousey,x,y+8+part_pos,8,16) && lmb)
-				{ scrollbar_dragged = 1; scrollbar_orig_y = mousey; scrollbar_orig_pos = scrollbar_pos; }
+			if(lmb)
+			{
+				if(scrollbar_pos>0 && inside_rect(mousex,mousey,x,y,8,8))
+					{ scrollbar_pos--; scrollbar_mouse_cooldown = 4; }
+				else if(scrollbar_pos<(max-1) && inside_rect(mousex,mousey,x,y+h-8,8,8))
+					{ scrollbar_pos++, scrollbar_mouse_cooldown = 4; }
+				else if(inside_rect(mousex,mousey,x,y+8+part_pos,8,16))
+					{ scrollbar_dragged = 1; scrollbar_orig_y = mousey; scrollbar_orig_pos = scrollbar_pos; }
+				else if(inside_rect(mousex,mousey,x,y+8,8,h-16)) // Scrolldrag part covered by above
+					{ scrollbar_pos = ((mousey-(y+8))*max/(h-32)); }
+			}
 		}
 		else scrollbar_mouse_cooldown--;
+		// Scrollwheel
+		if(inside_rect(mousex,mousey,x-1,y+7,10,h-14) && sfp_event_mouse_button_press(3) && scrollbar_pos>0)
+			{ scrollbar_pos--; }
+		else if(inside_rect(mousex,mousey,x-1,y+7,10,h-14) && sfp_event_mouse_button_press(4) && scrollbar_pos<(max-1))
+			{ scrollbar_pos++; }
 	}
 	else if(scrollbar_dragged == 1)
 	{

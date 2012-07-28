@@ -149,6 +149,7 @@ int sfp_event_getkey();
 int sfp_event_mouse_x();
 int sfp_event_mouse_y();
 int sfp_event_mouse_button(int btn);
+int sfp_event_mouse_button_press(int btn);
 void sfp_event_poll();
 void sfp_event_tick();
 
