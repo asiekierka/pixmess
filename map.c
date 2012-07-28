@@ -195,7 +195,14 @@ void layer_push_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 	// if we're not stacking, just use layer_set_tile
 	if(old->type == TILE_DUMMY || old->type == tile.type)
 		return layer_set_tile(x, y, tile, layer);
-	
+
+	// check if we can stack, otherwise pop and try again.
+	if(!tile_stackable(tile.type,old->type))
+	{
+		layer_pop_tile(x,y,layer);
+		return layer_push_tile(x,y,tile,layer);
+	}
+
 	// duplicate the top tile if necessary
 	tile_t *new = malloc(sizeof(tile_t));
 	
