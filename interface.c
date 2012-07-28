@@ -37,18 +37,19 @@ tile_t *ui_get_tile(void)
 	return drawing_tile;
 }
 
-s16 scrollbar_pos;
+s32 scrollbar_pos = 0;
+s32 scrollbar_pos_save[3];
 u8 scrollbar_dragged;
 u8 scrollbar_mouse_cooldown;
-u16 scrollbar_orig_y;
-s16 scrollbar_orig_pos;
+u32 scrollbar_orig_y;
+s32 scrollbar_orig_pos;
 
 u8 ui_can_mouse_button()
 {
 	return (scrollbar_dragged==0);
 }
 
-void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
+void render_scrollbar(u16 x, u16 y, u16 h, u16 max, int mouse_in_parent)
 {
 	// Sanity checks
 	if(max==0 || h%8>0) return;
@@ -86,9 +87,9 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max)
 		}
 		else scrollbar_mouse_cooldown--;
 		// Scrollwheel
-		if(inside_rect(mousex,mousey,x-1,y+7,10,h-14) && sfp_event_mouse_button_press(3) && scrollbar_pos>0)
+		if(mouse_in_parent && sfp_event_mouse_button_press(3) && scrollbar_pos>0)
 			{ scrollbar_pos--; }
-		else if(inside_rect(mousex,mousey,x-1,y+7,10,h-14) && sfp_event_mouse_button_press(4) && scrollbar_pos<(max-1))
+		else if(mouse_in_parent && sfp_event_mouse_button_press(4) && scrollbar_pos<(max-1))
 			{ scrollbar_pos++; }
 	}
 	else if(scrollbar_dragged == 1)
@@ -140,8 +141,9 @@ void render_type_window(void)
 			if(lmb) drawing_tile->type = j;
 		}
 	}
+	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-128,112,128);
 	int tmax = ((TILE_TYPES+2/4)-4);
-	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(tmax>0?tmax:0));
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(tmax>0?tmax:0),mouse_in);
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
 
@@ -169,7 +171,9 @@ void render_char_window(void)
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:(drawing_tile->chr==j?0xAAAAAA:0x555555)));
 		if(mouse_in && lmb) drawing_tile->chr = j;
 	}
-	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,(256/4)-4);
+	
+	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-152,112,152);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,(256/4)-4, mouse_in);
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0xCCCCCC);
 }
@@ -225,11 +229,16 @@ void render_ui(void)
 		{
 			if(mouse_left_down==0)
 			{
-				scrollbar_pos = 0;
+				if(activeUI >= 1 && activeUI <= 3)
+					scrollbar_pos_save[activeUI-1] = scrollbar_pos;
+				
 				if(activeUI == (mousex>>4))
 					activeUI = 0;
 				else
 					activeUI = (mousex>>4);
+				
+				if(activeUI >= 1 && activeUI <= 3)
+					scrollbar_pos = scrollbar_pos_save[activeUI-1];
 			}
 		}
 	}
