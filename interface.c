@@ -21,8 +21,9 @@ u8 ui_is_occupied(u16 x, u16 y)
 	switch(activeUI)
 	{
 		case 1:
-		case 2:
 			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-128) return 1;
+		case 2:
+			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-152) return 1;
 			break;
 		case 3:
 			if(x<=208 && y>=(SFP_FIELD_HEIGHT*16)-66) return 1;
@@ -105,7 +106,7 @@ void render_type_window(void)
 	u16 px,py;
 	for(i=0;i<20;i++)
 	{
-		j = i+(scrollbar_pos*4);	
+		j = 1+i+(scrollbar_pos*4);	
 		if(j>=TILE_TYPES) break;
 		px = 8+((i%4)*24);
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
@@ -119,7 +120,7 @@ void render_type_window(void)
 			if(lmb) drawing_tile->type = j;
 		}
 	}
-	int tmax = ((TILE_TYPES+3/4)-4);
+	int tmax = ((TILE_TYPES+2/4)-4);
 	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(tmax>0?tmax:0));
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
@@ -135,26 +136,26 @@ void render_char_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
 
-	// 112x128, 4x5 icons + scroll
-	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0x000000);
+	// 112x152, 4x6 icons + scroll
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0x000000);
 	// Drawing
 	u8 i,tcol,mouse_in;
 	u16 j,px,py;
 	tcol = drawing_tile->col;
-	for(i=0;i<20;i++)
+	for(i=0;i<24;i++)
 	{
 		j = i+(scrollbar_pos*4);	
 		if(j>255) break;
 		px = 8+((i%4)*24);
-		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
+		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-152);
 		mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:0x555555));
 		if(mouse_in && lmb) drawing_tile->chr = j;
 	}
-	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(256/4)-4);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,(256/4)-4);
 
-	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);
+	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0xCCCCCC);
 }
 void render_color_window(void)
 {

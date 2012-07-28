@@ -1,7 +1,10 @@
 #ifndef _CLIENT_H_
 #define _CLIENT_H_
 
+#include "common.h"
+
 void client_set_tile(s32 x, s32 y, tile_t tile);
+tile_t client_get_tile(s32 x, s32 y);
 void client_push_tile(s32 x, s32 y, tile_t tile);
 void client_pop_tile(s32 x, s32 y);
 

@@ -6,6 +6,7 @@ remember to do it often, or everything will turn to crap!
     --GM
 */
 
+#include "client.h"
 #include "common.h"
 #include "event.h"
 #include "interface.h"
@@ -13,6 +14,7 @@ remember to do it often, or everything will turn to crap!
 #include "misc.h"
 #include "player.h"
 #include "render.h"
+#include "tile.h"
 
 player_t *player;
 u8 movement_wait;
@@ -22,7 +24,7 @@ void player_move(s8 dx, s8 dy)
 {
 	s32 newx = player->x+dx;
 	s32 newy = player->y+dy;
-	if(tile_walkable(map_get_tile(newx,newy)))
+	if(tile_walkable(client_get_tile(newx,newy)))
 	{
 		player->x=newx;
 		player->y=newy;
@@ -43,21 +45,17 @@ void display (player_t *p)
 {
 	s32 i;
 	s32 j;
-	s32 rx = p->x;
-	s32 orx;
-	s32 ry = p->y;
-	s32 ory;
+	s32 rx = p->x-(SFP_FIELD_WIDTH)/2;
+	s32 orx = rx;
+	s32 ry = p->y-(SFP_FIELD_HEIGHT)/2;
+	s32 ory = ry;
 	tile_t tile;
 	map_layer_set_used_rendered(rx,ry);
-	rx -= (SFP_FIELD_WIDTH)/2;
-	ry -= (SFP_FIELD_HEIGHT)/2;
-	orx = rx;
-	ory = ry;
 	for(j=0;j<SFP_FIELD_HEIGHT;j++)
 	{
 		for(i=0;i<SFP_FIELD_WIDTH;i++)
 		{
-			tile = map_get_tile(rx,ry);
+			tile = client_get_tile(rx,ry);
 			sfp_putc_block_2x(i,j,(tile.col>>4),(tile.col&15),tile.chr);
 			rx++;
 		}
@@ -67,7 +65,7 @@ void display (player_t *p)
 	// Early player code.
 	u32 px = p->x-orx;
 	u32 py = p->y-ory;
-	if(!tile_overlay(map_get_tile(p->x,p->y))) sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
+	if(!tile_overlay(client_get_tile(p->x,p->y))) sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
 	char* name = "Gamemaster";
 
 	u32 pnamex = (px*16)-((strlen(name))*4)+8;
@@ -103,7 +101,7 @@ void mouse_placement()
 	else if(pressing_1 && (lastx != bx || lasty != by || !pressed_1))
 	{
 		tile_t *tile = ui_get_tile();
-		tile_t map_tile = map_get_tile(bx,by);
+		tile_t map_tile = client_get_tile(bx,by);
 		memcpy(tile,&map_tile,sizeof(tile_t));
 	}
 	else if(pressing_2 && (lastx != bx || lasty != by || !pressed_2))

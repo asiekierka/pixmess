@@ -10,7 +10,10 @@
 void map_init(void);
 void layer_free(layer_t *layer);
 layer_t *layer_new(void);
-layer_t *map_get_layer(s32 x, s32 y);
+
+layer_t *map_get_empty_layer(s32 x, s32 y);
+layer_t *map_get_existing_layer(s32 x, s32 y);
+
 void map_layer_set_unused(s32 x, s32 y);
 void map_layer_set_used(s32 x, s32 y);
 tile_t map_get_tile(s32 x, s32 y);
