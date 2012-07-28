@@ -1,34 +1,15 @@
 Draft for network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #01
+Draft #02
 
-WARNING: This protocol RELIES on TCP being a perfectly byte-accurate stream!
-
-I thought we could do a simple, non-blocking compression inspired by
-ImpulseTracker's pattern packing format.
-
-Each packet from $00-$3F has its own mask field,
-which will be updated as required.
-Packets from $40-$7F will NOT have mask fields.
-
-So basically, each packet is of one of these forms:
-
-	%0ttttttt - use a mask field of 0x00
-	%10tttttt - use current mask field
-	%11tttttt mmmmmmmm - define/use current mask field
+Layers:
+	We currently don't have a format for these yet.
 	
-	m = "mask" bits
-	t = packet type
-
-NOTE: The client and server do NOT share mask fields / parameters
-      for their packets!
+	
 
 Types:
 	Note, all types are *little-endian*.
-	
-	Also, fields marked with "$x" where 0 <= x <= 7
-	indicate that, if bit x of the mask is set, we reuse the old value.
 	
 	Fields marked with * indicate that this does not show up
 	in the client->server version.
@@ -45,83 +26,38 @@ Types:
 	w16 = wraparound 16-bit int
 	w32 = wraparound 32-bit int
 
-Compression tips:
-	Assuming masks are set to 0, and no other bits need to be affected.
-	
-	If a u16 does something like:
-	  3 3 2 5 (8 bytes)
-	then, using mask switching, we achieve:
-	  3 * 2 5 (6 + 1 + 1 = 8 bytes)
-	which is no big deal.
-	
-	HOWEVER, if a u8 does something like
-	  3 3 2 5 (4 bytes)
-	then, using mask switching, we achieve:
-	  3 * 2 5 (3 + 1 + 1 = 5 bytes)
-	which is an increase.
-	
-	BE WARY OF THIS.
-	
-	If a u8 goes like this:
-	  3 - 3 (3 bytes)
-	where - means "don't care", it's better to treat it like this:
-	  3 3 3 (1, +1 (mask set), +0 = 2 bytes)
-	rather than:
-	  3 not3 3
-	
-	Of course, if it does
-	  3 - 2 2 (4 bytes)
-	then doing:
-	  3 3 2 2 (1,1,2,0 = 4 bytes)
-	is not as good as doing:
-	  3 2 2 2 (1,1,1,0 = 3 bytes)
-	
-	The first case is the one to watch out for, mostly.
-	
-
 Packets:
 
 $00 = *RESERVED*
 
-$02 = block_set_solid(w16 x$0, w16 y$1, s8 typ$2, s8 col$3, s8 ch$4) *->*
-$03 = block_set_walkable(w16 x$0, w16 y$1, s8 typ$2, s8 col$3, s8 ch$4) *->*
-	Sets the block's status on the solid/walkable sublayers.
+$01 = block_set(w16 x, w16 y, s8 typ, s8 col, s8 ch) *->*
+$02 = block_push(w16 x, w16 y, s8 typ, s8 col, s8 ch) *->*
+	Sets or pushes a block onto a layer.
+	The difference is that "pushing" makes a copy of the current tile,
+	and then sticks that underneath the new tile.
 	
-	NOTE: there is currently no sublayering system,
-	      so both will just set the layer value.
+$03 = block_pop(w16 x, w16 y)
+	Pops a block off the top of a layer.
 	
-	The reason for splitting a layer into sublayers is to allow pushables
-	to be implemented.
+	If there is no under type, set the tile to a col=0x07 ch=0x20 dummy.
 
-$10 = entity_movement(u16 id*$1, u8 dir$0) *->*
-	Indicates a player's movement in direction dir,
-	where dir is one of:
+$10 = entity_movement(u16 id, s8 dx, s8 dy) S->C
+$10 = entity_movement(u8 dir) C->S
+	Indicates a player's movement in direction (dx,dy).
 	
-	000 = EAST
-	001 = WEST
-	010 = SOUTH
-	011 = NORTH
-	100 = SOUTH-EAST
-	101 = NORTH-WEST
-	110 = SOUTH-WEST
-	111 = NORTH-EAST
-	
-	In other words, in this order:
-	
-	start: ( 1 , 0 )
-	bit 0: (-x ,-y )
-	bit 1: ( y , x )
-	bit 2: (x-y,y+x)
-	
-	(linear algebra ftw)
+	Note, in the client->server version,
+	dir is in this format:
+	  %yyyyxxxx
+	where x and y are signed nybbles indicating direction,
+	and -8 does not mean anything yet - IT IS RESERVED.
 
-$11 = entity_creation(u16 id*, s32 x$1, s32 y$2, s16 col$3, s16 ch$4, pstr8 name) S->C
+$11 = entity_creation(u16 id, s32 x, s32 y, s16 col, s16 ch, pstr8 name) S->C
 	Indicates the creation of a new entity.
 
-$40 = layer_request(s32 x, s32 y) C->S
+$40 = layer_request(s32 x, s32 y, u8 index) C->S
 	Requests a layer chunk from the server.
 
-$41 = layer_start(s32 x, s32 y) S->C
+$41 = layer_start(s32 x, s32 y, u8 index) S->C
 $42 = layer_data(pstr16 data) S->C
 $43 = layer_end() S->C
 	Sends a GZipped layer chunk in pieces.
@@ -131,7 +67,7 @@ $43 = layer_end() S->C
 	Once the layer has been sent, the appropriate $11 "entity_creation"
 	messages need to be sent to the client.
 
-$44 = layer_release(s32 x, s32 y) *->*
+$44 = layer_release(s32 x, s32 y, u8 index) *->*
 	Indicates that the layer chunk is no longer being handled.
 	C->S: Tells the server to stop sending info about this chunk.
 	S->C: Tells the client it's stopped sending info about this chunk.
