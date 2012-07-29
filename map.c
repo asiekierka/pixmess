@@ -124,20 +124,20 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 		tile_t *t = &(layer->tiles[i]);
 		while(t != NULL)
 		{
-			int extflag = (t->chr > 0xFF || t->under != NULL || t->data != NULL);
+			u8 flags = ((t->chr > 0xFF) || (t->under != NULL)<<1 || (t->data != NULL)<<2);
 			
-			// type + extflag
-			fputc(extflag ? (t->type|0x80) : (t->type&~0x80)
-				,fp);
+			// flags & type
+			fputc(flags,fp);
+			fputc(t->type,fp);
 			
 			// chr + col
 			fputc(t->chr&0xFF, fp);
-			if(extflag)
+			if(flags&MAP_FLAG_U16CHAR)
 				fputc(t->chr>>8, fp);
 			fputc(t->col, fp);
 			
 			// data
-			if(extflag)
+			if(flags&MAP_FLAG_DATA)
 			{
 				if(t->data == NULL)
 				{
@@ -146,11 +146,12 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 					fputc(t->datalen, fp);
 					fwrite(t->data, t->datalen, 1, fp);
 				}
-				
-				if(t->under == NULL)
-					fputc(0x00, fp);
 			}
-			
+			if(flags&MAP_FLAG_UNDER)
+			{
+				if(t->under == NULL)
+					fputc(0x00, fp);			
+			}
 			// next tile
 			t = t->under;
 		}
@@ -283,17 +284,21 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 		
 		while(t != NULL)
 		{
-			int extflag = (*v) & 0x80;
-			
-			t->type = (*(v++)) & 0x7F;
+			u8 flags = (*(v++));
+			t->type = (*(v++));
 			
 			//printf("%i type = %02X%s\n", i, t->type, (extflag ? " EXTENDED" : ""));
 			
-			if(extflag)
+			if(flags&MAP_FLAG_U16CHAR)
 			{
 				t->chr = *(u16 *)v;
 				v += 2;
-				t->col = *(v++);
+			}
+			else t->chr = *(v++);
+			
+			t->col = *(v++);
+			if(flags&MAP_FLAG_DATA)
+			{
 				t->datalen = *(v++);
 				t->data = NULL;
 				//printf("chr=%04X col=%02X datalen=%02X\n", t->chr, t->col, t->datalen);
@@ -310,16 +315,10 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 					memcpy(t->data, v, t->datalen);
 					v += t->datalen;
 				}
+			}
 				
-				//printf("%02X\n", *v);
-				if(*v == 0x80)
-				{
-					// TODO: handle this more gracefully rather than just crashing
-					fprintf(stderr, "ERROR: value 0x80 is reserved in type chain\n");
-					fprintf(stderr, "don't know how to handle correctly -- ABORTING!\n");
-					abort();
-				}
-				
+			if(flags&MAP_FLAG_UNDER)
+			{
 				if(*v != 0x00)
 				{
 					t->under = malloc(sizeof(tile_t));
@@ -335,15 +334,8 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 					t->under = NULL;
 					t = NULL;
 				}
-			} else {
-				t->chr = *(v++);
-				t->col = *(v++);
-				t->data = NULL;
-				t->under = NULL;
-				t->datalen = 0;
-				
-				t = NULL;
 			}
+			else t = NULL;
 		}
 	}
 	

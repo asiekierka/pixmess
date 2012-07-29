@@ -69,4 +69,11 @@ enum
 	LAYER_REQUESTED,
 };
 
+enum
+{
+	MAP_FLAG_U16CHAR = 1,
+	MAP_FLAG_UNDER = 2,
+	MAP_FLAG_DATA = 4,
+};
+
 #endif /* _SFP_TYPES_H_ */
