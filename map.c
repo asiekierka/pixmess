@@ -88,7 +88,7 @@ layer_t *layer_new(int w, int h, int template)
 				else
 				{
 					a->tiles[i].type = TILE_FLOOR;
-					a->tiles[i].chr = 0x120; // TODO: reset back to 0x20 --GM
+					a->tiles[i].chr = 0x20;
 					a->tiles[i].col = 0x07;
 				}
 				a->tiles[i].under = NULL;
