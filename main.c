@@ -120,14 +120,17 @@ int main(int argc, char *argv[])
 {
 	if(sfp_init_render())
 		return 1;
-
+	
+	if(net_init())
+		return 1;
+	
 	map_init();
 	init_ui();
-
+	
 	movement_wait = 0;
-
+	
 	player = player_get(PLAYER_SELF);
-
+	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
 	{
 		sfp_render_begin();
@@ -147,14 +150,14 @@ int main(int argc, char *argv[])
 			if(sfp_event_key(SFP_KEY_D))
 				player_move(1,0);
 		}
-
+		
 		
 		if(movement_wait>0) movement_wait--;
 		frame_counter++;
-
+		
 		sfp_render_end();
 		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
-
+		
 		sfp_event_poll();
 		sfp_event_tick();
 	}

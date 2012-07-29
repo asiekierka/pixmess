@@ -1,7 +1,7 @@
 Draft for network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #02.01
+Draft #02.02
 
 Layers:
 	We currently don't have a format for these yet.
@@ -34,7 +34,7 @@ $02 = block_push(w16 x, w16 y, s8 typ, s8 col, s8 ch) *->*
 	The difference is that "pushing" makes a copy of the current tile,
 	and then sticks that underneath the new tile.
 	
-$03 = block_pop(w16 x, w16 y)
+$03 = block_pop(w16 x, w16 y) *->*
 	Pops a block off the top of a layer.
 	
 	If there is no under type, set the tile to a col=0x07 ch=0x20 dummy.

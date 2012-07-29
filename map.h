@@ -26,6 +26,7 @@ tile_t layer_get_tile(u8 x, u8 y, layer_t *layer);
 void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer);
 void layer_push_tile(u8 x, u8 y, tile_t tile, layer_t *layer);
 void layer_pop_tile(u8 x, u8 y, layer_t *layer);
+layer_t *layer_dummy_request(s32 x, s32 y);
 
 void map_layer_set_used_rendered(s32 x, s32 y);
 

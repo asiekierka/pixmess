@@ -1,36 +1,243 @@
 #include "common.h"
+#include "map.h"
 #include "network.h"
 
-int net_sockfd = 0;
-int server_sockfd = 0;
+// some delicious strings
+char *net_pktstr_c2s[128] = {
+	NULL, "22111", "22111", "22", NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	"1", NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	"441", NULL, NULL, NULL, "441", NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	"44", "2", NULL, NULL, NULL, NULL, NULL, NULL,
+	"s", NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, "222s", "1", "1", "", "s",
+};
 
+char *net_pktstr_s2c[128] = {
+	NULL, "22111", "22111", "22", NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	"211", "24422s", NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, "441", "S", "", "441", NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	"244", "2", NULL, NULL, NULL, NULL, NULL, NULL,
+	"s", NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, "1", "1", "2", "s",
+};
+
+// client stuff
 int net_initialised = 0;
+netplayer_t net_player;
+
+// server stuff
+int server_sockfd = 0;
 
 int net_init()
 {
 	if(net_initialised)
 		return 0;
 	
-	// Only Windows requires special initialisation. --GM
+	// Prepare the client stuff
+	net_player.id = 0;
+	net_player.sockfd = 0;
+	net_player.pkt_head = NULL;
+	net_player.pkt_tail = NULL;
+	
+	// Prepare the server stuff
+	server_sockfd = 0;
+	
+	// TODO: special treatment for Windows
+	// required like everything else Microsoft ever made
 	
 	net_initialised = 255;
 	return 0;
 }
 
-void net_report_layer(s32 x, s32 y, u8 position)
+/*
+
+Format char specification:
+	1 = int8
+	2 = int16
+	4 = int32
+	s = pstr8
+	S = pstr16
+
+For wraparound types, just use the unsigned variant.
+
+*/
+
+// NOTE: Set np to NULL for C->S stuff!
+// Otherwise it will assume S->C stuff!
+netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 {
-	if(net_init())
-		return;
+	int i, j;
+	char *v;
 	
-	printf("net_report_layer: %d,%d, pos %d\n",x,y,position);
+	char *fmt = (cmd >= 128
+		? NULL
+		: (np == NULL ? net_pktstr_c2s : net_pktstr_s2c)[cmd]
+	);
+	
+	// If command not defined, complain and return NULL.
+	if(fmt == NULL)
+	{
+		fprintf(stderr, "EDOOFUS: command %02X not defined for %s\n",
+			cmd, (np == NULL ? "C->S" : "S->C"));
+		return NULL;
+	}
+	
+	// If C->S, set np NOW.
+	if(np == NULL)
+		np = &net_player;
+	
+	va_list args;
+	
+	// Calculate size
+	int size = 0;
+	va_start(args, cmd);
+	for(i = 0; fmt[i] != '\0'; i++)
+	switch(fmt[i])
+	{
+		case '1':
+			size += 1-0;
+		case '2':
+			size += 2-1;
+		case '4':
+			size += 4-2;
+			va_arg(args, int);
+			break;
+		case 's':
+			j = va_arg(args, int) & 0xFF;
+			size += 1+j;
+			break;
+		case 'S':
+			j = va_arg(args, int) & 0xFFFF;
+			size += 2+j;
+			break;
+	}
+	va_end(args);
+	
+	// Allocate packet (if possible)
+	netpacket_t *pkt = malloc(sizeof(netpacket_t)+size);
+	
+	// Failed to allocate? DIE HORRIBLY.
+	if(pkt == NULL)
+	{
+		fprintf(stderr, "FATAL: COULD NOT ALLOCATE PACKET OF SIZE %i\n", size);
+		perror("net_pack");
+		exit(44);
+	}
+	
+	// Fill in the fields
+	pkt->cmd = cmd;
+	pkt->next = NULL;
+	
+	// Write data
+	u8 *data = pkt->data;
+	va_start(args, cmd);
+	for(i = 0; fmt[i] != '\0'; i++)
+	switch(fmt[i])
+	{
+		// yeah, let's face it. i'm insane.
+		// i look at this and think "hmm, STOSB/W/D would be useful here".
+		//     --GM
+		case '1':
+			*(data++) = va_arg(args, int);
+			break;
+		case '2':
+			*((u16 *)data) = va_arg(args, int);
+			data += 2;
+			break;
+		case '4':
+			*((u32 *)data) = va_arg(args, int);
+			data += 4;
+			break;
+		case 's':
+			v = va_arg(args, char *);
+			j = strlen(v);
+			if(j > 0xFF) j = 0xFF;
+			
+			*data++ = j;
+			memcpy(data, v, j);
+			data += j;
+			break;
+		case 'S':
+			v = va_arg(args, char *);
+			j = strlen(v);
+			if(j > 0xFFFF) j = 0xFFFF;
+			
+			*((u16 *)data) = va_arg(args, int);
+			data += 2;
+			memcpy(data, v, j);
+			data += j;
+			break;
+	}
+	va_end(args);
+	
+	// Append to the end of the list
+	if(np->pkt_tail == NULL)
+	{
+		np->pkt_head = np->pkt_tail = pkt;
+	} else {
+		np->pkt_tail->next = pkt;
+		np->pkt_tail = pkt;
+	}
 }
 
-void net_report_unlayer(s32 x, s32 y, u8 position)
+layer_t *net_layer_request(s32 x, s32 y, u8 position)
 {
-	if(net_init())
-		return;
+	printf("net_layer_request: %d,%d, pos %d\n",x,y,position);
 	
-	printf("net_report_unlayer: %d,%d, pos %d\n",x,y,position);
+	if(net_player.sockfd != 0)
+	{
+		net_pack(NULL, PKT_LAYER_REQUEST,
+			x, y, position);
+		return NULL;
+	} else {
+		// TODO: load from disk if possible
+		return layer_dummy_request(x, y);
+	}
+	
+}
+
+void net_layer_release(s32 x, s32 y, u8 position)
+{
+	printf("net_layer_release: %d,%d, pos %d\n",x,y,position);
+	if(net_player.sockfd != 0)
+	{
+		net_pack(NULL, PKT_LAYER_RELEASE,
+			x, y, position);
+	}
 }
 
 int server_init()

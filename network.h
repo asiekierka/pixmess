@@ -14,8 +14,35 @@
 #include <arpa/inet.h>
 #endif
 
-void net_report_layer(s32 x, s32 y, u8 position);
-void net_report_unlayer(s32 x, s32 y, u8 position);
+layer_t *net_layer_request(s32 x, s32 y, u8 position);
+void net_layer_release(s32 x, s32 y, u8 position);
+
+enum
+{
+	PKT_BLOCK_SET = 0x01,
+	PKT_BLOCK_PUSH,
+	PKT_BLOCK_POP,
+	
+	PKT_ENTITY_MOVEMENT = 0x10,
+	PKT_ENTITY_CREATION,
+	
+	PKT_LAYER_REQUEST = 0x40,
+	PKT_LAYER_START,
+	PKT_LAYER_DATA,
+	PKT_LAYER_END,
+	PKT_LAYER_RELEASE,
+	
+	PKT_ENTITY_POSITION = 0x50,
+	PKT_ENTITY_DESTRUCTION,
+	
+	PKT_CHAT = 0x58,
+	
+	PKT_LOGIN = 0x7B,
+	PKT_PING,
+	PKT_PONG,
+	PKT_PLAYER_ID,
+	PKT_KICK,
+};
 
 #endif /* _NETWORK_H_ */
 

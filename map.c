@@ -88,7 +88,7 @@ void map_init(void)
 
 void layer_unload(int i)
 {
-	net_report_unlayer(layers[i]->x,layers[i]->y,i);
+	net_layer_release(layers[i]->x,layers[i]->y,i);
 	layer_free(layers[i]);
 	layer_set[i] = LAYER_UNALLOC;
 }
@@ -115,10 +115,7 @@ layer_t *map_get_empty_layer(s32 x, s32 y)
 			layer_unload(i);
 		if(layer_set[i]==LAYER_UNALLOC)
 		{
-			net_report_layer(x,y,i);
-			
-			// TODO: factor this code out --GM
-			layers[i] = layer_dummy_request(x,y);
+			layers[i] = net_layer_request(x,y,i);
 			
 			if(layers[i] == NULL)
 			{

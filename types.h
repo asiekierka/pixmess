@@ -21,12 +21,6 @@ typedef struct player
 	u16 chr;
 } player_t;
 
-typedef struct netplayer
-{
-	u16 id;
-	int sockfd;
-} netplayer_t;
-
 typedef struct tile tile_t;
 struct tile
 {
@@ -43,6 +37,22 @@ typedef struct layer
 	u16 w,h;
 	tile_t *tiles;
 } layer_t;
+
+typedef struct netpacket netpacket_t;
+struct netpacket
+{
+	u32 length;
+	netpacket_t *next;
+	u8 cmd;
+	u8 data[];
+};
+
+typedef struct netplayer
+{
+	u16 id;
+	int sockfd;
+	netpacket_t *pkt_head, *pkt_tail;
+} netplayer_t;
 
 enum
 {
