@@ -6,7 +6,7 @@ Version #01
 NOTE: All layers are ZLib-compressed (NOT a GZip container!).
 
 Layer header:
-	u32 magic = 0xCE1E571A; // magic number (read: asie is a brony)
+	u32 magic = 0x1A571ECE; // magic number (read: asie is a brony)
 	u16 version = 1; // current version
 	u8 width, height; // 32-255 for each
 

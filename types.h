@@ -27,6 +27,8 @@ struct tile
 	u8 type;
 	u16 chr;
 	u8 col;
+	u8 datalen;
+	
 	tile_t *under;
 	u8 *data;
 };

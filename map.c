@@ -60,6 +60,7 @@ layer_t *layer_new(int w, int h, int template)
 				a->tiles[i].col = 0x07;
 				a->tiles[i].under = NULL;
 				a->tiles[i].data = NULL;
+				a->tiles[i].datalen = 0;
 			};
 			break;
 		case LAYER_TEMPLATE_CLASSIC:
@@ -87,11 +88,12 @@ layer_t *layer_new(int w, int h, int template)
 				else
 				{
 					a->tiles[i].type = TILE_FLOOR;
-					a->tiles[i].chr = 0x20;
+					a->tiles[i].chr = 0x120; // TODO: reset back to 0x20 --GM
 					a->tiles[i].col = 0x07;
 				}
 				a->tiles[i].under = NULL;
 				a->tiles[i].data = NULL;
+				a->tiles[i].datalen = 0;
 			}
 			break;
 	}
@@ -111,7 +113,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 		return NULL;
 	
 	// write header
-	i1 = 0xCE1E571A; fwrite(&i1, 4, 1, fp);
+	i1 = 0x1A571ECE; fwrite(&i1, 4, 1, fp);
 	s1 = LAYER_VERSION; fwrite(&s1, 2, 1, fp);
 	fputc(layer->w, fp);
 	fputc(layer->h, fp);
@@ -122,7 +124,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 		tile_t *t = &(layer->tiles[i]);
 		while(t != NULL)
 		{
-			int extflag = (t->chr > 0xFF || t->under != NULL);
+			int extflag = (t->chr > 0xFF || t->under != NULL || t->data != NULL);
 			
 			// type + extflag
 			fputc(extflag ? (t->type|0x80) : (t->type&~0x80)
@@ -134,10 +136,23 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 				fputc(t->chr>>8, fp);
 			fputc(t->col, fp);
 			
+			// data
+			if(extflag)
+			{
+				if(t->data == NULL)
+				{
+					fputc(0x00, fp);
+				} else {
+					fputc(t->datalen, fp);
+					fwrite(t->data, t->datalen, 1, fp);
+				}
+				
+				if(t->under == NULL)
+					fputc(0x00, fp);
+			}
+			
 			// next tile
 			t = t->under;
-			if(extflag && t == NULL)
-				fputc(0x00, fp);
 		}
 	}
 	
@@ -162,7 +177,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	}
 	
 	// very rare case of me checking the return value of fread --GM
-	if(fread(buf_raw, *rawlen, 1, fp) != (size_t)*rawlen)
+	if(fread(buf_raw, *rawlen, 1, fp) != 1)
 	{
 		fprintf(stderr, "FATAL: YOUR OS SUCKS\n");
 		perror("layer_serialise");
@@ -223,7 +238,7 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 	u8 *v = buf_raw;
 	
 	// load the header
-	if(*(u32 *)v != (u32)0xCE1E571A)
+	if(*(u32 *)v != (u32)0x1A571ECE)
 	{
 		fprintf(stderr, "ERROR: incorrect magic number\n");
 		free(buf_raw);
@@ -264,11 +279,76 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 	// decode stream
 	for(i = 0; i < w*h; i++)
 	{
+		tile_t *t = &(layer->tiles[i]);
 		
+		while(t != NULL)
+		{
+			int extflag = (*v) & 0x80;
+			
+			t->type = (*(v++)) & 0x7F;
+			
+			//printf("%i type = %02X%s\n", i, t->type, (extflag ? " EXTENDED" : ""));
+			
+			if(extflag)
+			{
+				t->chr = *(u16 *)v;
+				v += 2;
+				t->col = *(v++);
+				t->datalen = *(v++);
+				t->data = NULL;
+				//printf("chr=%04X col=%02X datalen=%02X\n", t->chr, t->col, t->datalen);
+				if(t->datalen != 0)
+				{
+					t->data = malloc(t->datalen);
+					if(t->data == NULL)
+					{
+						fprintf(stderr, "FATAL: COULD NOT ALLOCATE DATA\n");
+						perror("layer_unserialise");
+						abort();
+					}
+					
+					memcpy(t->data, v, t->datalen);
+					v += t->datalen;
+				}
+				
+				//printf("%02X\n", *v);
+				if(*v == 0x80)
+				{
+					// TODO: handle this more gracefully rather than just crashing
+					fprintf(stderr, "ERROR: value 0x80 is reserved in type chain\n");
+					fprintf(stderr, "don't know how to handle correctly -- ABORTING!\n");
+					abort();
+				}
+				
+				if(*v != 0x00)
+				{
+					t->under = malloc(sizeof(tile_t));
+					if(t->under == NULL)
+					{
+						fprintf(stderr, "FATAL: COULD NOT ALLOCATE UNDER\n");
+						perror("layer_unserialise");
+						abort();
+					}
+					t = t->under;
+				} else {
+					v++;
+					t->under = NULL;
+					t = NULL;
+				}
+			} else {
+				t->chr = *(v++);
+				t->col = *(v++);
+				t->data = NULL;
+				t->under = NULL;
+				t->datalen = 0;
+				
+				t = NULL;
+			}
+		}
 	}
 	
 	free(buf_raw);
-	return NULL;
+	return layer;
 }
 
 layer_t *layer_dummy_request(s32 x, s32 y)

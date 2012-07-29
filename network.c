@@ -231,7 +231,36 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 		return NULL;
 	} else {
 		// TODO: load from disk if possible
-		return layer_dummy_request(x, y);
+		printf("TESTING: serialise / unserialise\n");
+		
+		//return layer_dummy_request(x, y);
+		layer_t *layer = layer_dummy_request(x, y);
+		int rawlen, cmplen;
+		
+		u8 *buffer = layer_serialise(layer, &rawlen, &cmplen);
+		if(buffer == NULL)
+		{
+			printf("DEBUG: buffer is NULL, returning layer\n");
+			return layer;
+		}
+		
+		printf("layer size %i -> %i\n", rawlen, cmplen);
+		
+		layer_t *nlayer = layer_unserialise(buffer, rawlen, cmplen);
+		free(buffer);
+		if(nlayer == NULL)
+		{
+			printf("DEBUG: nlayer is NULL, returning layer\n");
+			return layer;
+		}
+		
+		// TODO: confirm layer integrity
+		
+		nlayer->x = layer->x;
+		nlayer->y = layer->y;
+		
+		layer_free(layer);
+		return nlayer;
 	}
 	
 }
