@@ -5,6 +5,10 @@ Version #01
 
 NOTE: All layers are ZLib-compressed (NOT a GZip container!).
 
+File header:
+	u32 rawlen; // length of uncompressed data
+	u32 cmplen; // length of compressed data
+
 Layer header:
 	u32 magic = 0x1A571ECE; // magic number (read: asie is a brony)
 	u16 version = 1; // current version
@@ -13,18 +17,17 @@ Layer header:
 Layer structure:
 
 For each cell[y][x]...
-	u8 type; // 0x00-0x7F; top bit set indicates expanded cell
+	u8 flags;
+	// bit 0 = extended char
+	// bit 1 = under-tile follows
+	// bit 2 = data field
+	// bit 3 = data field length is 16 bits
+
+	u8 type; 
+	u8/16 chr; // 0x0000-0x7FFF (0x8000 upwards reserved)
+	u8 col;
+	pstr8/16 data;
 	
-	For unexpanded cells:
-		u8 chr, col;
-	
-	For expanded cells:
-		u16 chr; // 0x0000-0x7FFF
-		u8 col;
-		pstr8 data;
-		
-		Followed by either:
-			- u8 0x00, indicating end of tile stack.
-			- u8 0x80 which is RESERVED - DO NOT USE.
-			- Another cell which goes UNDERNEATH.
+	Keep building the stack top to bottom
+	until you encounter a tile where bit 1 is clear.
 

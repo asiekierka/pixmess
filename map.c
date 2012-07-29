@@ -124,8 +124,16 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 		tile_t *t = &(layer->tiles[i]);
 		while(t != NULL)
 		{
-			u8 flags = ((t->chr > 0xFF) || (t->under != NULL)<<1 || (t->data != NULL)<<2);
-			flags |= ((t->datalen > 0xFF)<<3);
+			u8 flags = 0;
+			if(t->chr > 0xFF)
+				flags |= MAP_FLAG_U16CHAR;
+			if(t->under != NULL)
+				flags |= MAP_FLAG_UNDER;
+			if(t->data != NULL)
+				flags |= MAP_FLAG_DATA;
+			if(t->datalen > 0xFF)
+				flags |= MAP_FLAG_EXT_DATALEN;
+			
 			// flags & type
 			fputc(flags,fp);
 			fputc(t->type,fp);
@@ -139,22 +147,10 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 			// data
 			if(flags&MAP_FLAG_DATA)
 			{
-				if(t->data == NULL)
-				{
-					fputc(0x00, fp);
-					if(flags&MAP_FLAG_EXT_DATALEN)
-						fputc(0x00, fp);
-				} else {
-					fputc(t->datalen&0xFF, fp);
-					if(flags&MAP_FLAG_EXT_DATALEN)
-						fputc(t->datalen>>8, fp);
-					fwrite(t->data, t->datalen, 1, fp);
-				}
-			}
-			if(flags&MAP_FLAG_UNDER)
-			{
-				if(t->under == NULL)
-					fputc(0x00, fp);			
+				fputc(t->datalen&0xFF, fp);
+				if(flags&MAP_FLAG_EXT_DATALEN)
+					fputc(t->datalen>>8, fp);
+				fwrite(t->data, t->datalen, 1, fp);
 			}
 			// next tile
 			t = t->under;
@@ -297,16 +293,19 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 			{
 				t->chr = *(u16 *)v;
 				v += 2;
+			} else {
+				t->chr = *(v++);
 			}
-			else t->chr = *(v++);
 			
 			t->col = *(v++);
+			t->data = NULL;
+			t->datalen = 0;
 			if(flags&MAP_FLAG_DATA)
 			{
 				t->datalen = *(v++);
 				if(flags&MAP_FLAG_EXT_DATALEN)
 					t->datalen |= ((*(v++))<<8);
-				t->data = NULL;
+				
 				//printf("chr=%04X col=%02X datalen=%02X\n", t->chr, t->col, t->datalen);
 				if(t->datalen != 0)
 				{
@@ -323,25 +322,18 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 				}
 			}
 				
+			t->under = NULL;
 			if(flags&MAP_FLAG_UNDER)
 			{
-				if(*v != 0x00)
+				t->under = malloc(sizeof(tile_t));
+				if(t->under == NULL)
 				{
-					t->under = malloc(sizeof(tile_t));
-					if(t->under == NULL)
-					{
-						fprintf(stderr, "FATAL: COULD NOT ALLOCATE UNDER\n");
-						perror("layer_unserialise");
-						abort();
-					}
-					t = t->under;
-				} else {
-					v++;
-					t->under = NULL;
-					t = NULL;
+					fprintf(stderr, "FATAL: COULD NOT ALLOCATE UNDER\n");
+					perror("layer_unserialise");
+					abort();
 				}
 			}
-			else t = NULL;
+			t = t->under;
 		}
 	}
 	

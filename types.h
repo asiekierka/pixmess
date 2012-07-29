@@ -69,12 +69,9 @@ enum
 	LAYER_REQUESTED,
 };
 
-enum
-{
-	MAP_FLAG_U16CHAR = 1,
-	MAP_FLAG_UNDER = 2,
-	MAP_FLAG_DATA = 4,
-	MAP_FLAG_EXT_DATALEN = 8,
-};
+#define MAP_FLAG_U16CHAR 1
+#define MAP_FLAG_UNDER 2
+#define MAP_FLAG_DATA 4
+#define MAP_FLAG_EXT_DATALEN 8
 
 #endif /* _SFP_TYPES_H_ */
