@@ -1,0 +1,30 @@
+Layer format for pixmess
+by Ben "GreaseMonkey" Russell, 2012
+
+Version #01
+
+NOTE: All layers are ZLib-compressed (NOT a GZip container!).
+
+Layer header:
+	u32 magic = 0xCE1E571A; // magic number (read: asie is a brony)
+	u16 version = 1; // current version
+	u8 width, height; // 32-255 for each
+
+Layer structure:
+
+For each cell[y][x]...
+	u8 type; // 0x00-0x7F; top bit set indicates expanded cell
+	
+	For unexpanded cells:
+		u8 chr, col;
+	
+	For expanded cells:
+		u16 chr; // 0x0000-0x7FFF
+		u8 col;
+		pstr8 data;
+		
+		Followed by either:
+			- u8 0x00, indicating end of tile stack.
+			- u8 0x80 which is RESERVED - DO NOT USE.
+			- Another cell which goes UNDERNEATH.
+

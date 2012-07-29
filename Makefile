@@ -5,10 +5,10 @@
 # OK, this is my commandline... --GM
 # make CC=i686-pc-mingw32-gcc CFLAGS=-I/usr/i686-pc-mingw32/sys-root/mingw/include/SDL/ BINNAME=c64pixels.exe
 
-LIBS = `sdl-config --libs`
-CFLAGS = -g `sdl-config --cflags`
+LIBS = `sdl-config --libs` -lz
+CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter
 LDFLAGS = -g
-BINNAME = c64pixels
+BINNAME = pixmess
 PLATFORM = sdl
 RENDERER = $(PLATFORM)
 

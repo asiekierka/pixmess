@@ -27,6 +27,8 @@ int sfp_init_render()
 		return 1;
 
 	render_initialized = 255;
+	
+	return 0;
 }
 
 void sfp_render_begin()

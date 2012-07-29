@@ -14,6 +14,8 @@
 #include <arpa/inet.h>
 #endif
 
+int net_init();
+
 layer_t *net_layer_request(s32 x, s32 y, u8 position);
 void net_layer_release(s32 x, s32 y, u8 position);
 

@@ -12,6 +12,7 @@ remember to do it often, or everything will turn to crap!
 #include "interface.h"
 #include "map.h"
 #include "misc.h"
+#include "network.h"
 #include "player.h"
 #include "render.h"
 #include "tile.h"

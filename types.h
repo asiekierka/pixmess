@@ -47,11 +47,16 @@ struct netpacket
 	u8 data[];
 };
 
+#define NET_MTU 1024
+#define NET_BUF_MAX 4096
 typedef struct netplayer
 {
 	u16 id;
 	int sockfd;
-	netpacket_t *pkt_head, *pkt_tail;
+	netpacket_t *pkt_in_head, *pkt_in_tail;
+	netpacket_t *pkt_out_head, *pkt_out_tail;
+	int pkt_out_pos;
+	int pkt_in_pos;
 } netplayer_t;
 
 enum

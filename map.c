@@ -6,6 +6,8 @@
 
 layer_t *layers[LAYER_SIZE];
 u8 layer_set[LAYER_SIZE];
+s32 layer_x[LAYER_SIZE];
+s32 layer_y[LAYER_SIZE];
 
 void layer_free(layer_t *layer)
 {
@@ -32,49 +34,246 @@ void layer_free(layer_t *layer)
 	free(layer);
 }
 
-layer_t *layer_new(void)
+layer_t *layer_new(int w, int h, int template)
 {
-	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
-	a->w = LAYER_WIDTH;
-	a->h = LAYER_HEIGHT;
-	a->tiles = (tile_t *)malloc(sizeof(tile_t)*LAYER_WIDTH*LAYER_HEIGHT);
-	int i;
-	for(i=0;i<LAYER_WIDTH*LAYER_HEIGHT;i++)
+	if(w < 1 || h < 1 || w > 255 || h > 255)
 	{
-		int randomizer = rand()%64;
-		if(randomizer == 42 || randomizer == 24)
-		{
-			a->tiles[i].type = TILE_WALL;
-			// Hacks to skip empties.
-			a->tiles[i].chr = 32;
-			while(a->tiles[i].chr == 32)
-				a->tiles[i].chr = (u16)(rand()%254)+1;
-			a->tiles[i].col = (1+(rand()%15))+((rand()%8)<<4);
-		}
-		else if(randomizer == 17)
-		{
-			a->tiles[i].type = TILE_ROOF;
-			// Hacks to skip empties.
-			a->tiles[i].chr = 32;
-			while(a->tiles[i].chr == 32)
-				a->tiles[i].chr = (u16)(rand()%254)+1;
-			a->tiles[i].col = 240+(rand()%15);
-		}
-		else
-		{
-			a->tiles[i].type = TILE_FLOOR;
-			a->tiles[i].chr = 0;
-			a->tiles[i].col = 0;
-		}
-		a->tiles[i].under = NULL;
-		a->tiles[i].data = NULL;
+		fprintf(stderr, "ERROR: %i x %i are not valid layer dimensions\n", w, h);
+		return NULL;
+	}
+	
+	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
+	a->w = w;
+	a->h = h;
+	a->tiles = (tile_t *)malloc(sizeof(tile_t)*w*h);
+	int i;
+	
+	switch(template)
+	{
+		default:
+			fprintf(stderr,"EDOOFUS: invalid template; going with LAYER_TEMPLATE_EMPTY\n");
+		case LAYER_TEMPLATE_EMPTY:
+			for(i=0;i<w*h;i++)
+			{
+				a->tiles[i].type = TILE_FLOOR;
+				a->tiles[i].chr = 0x20;
+				a->tiles[i].col = 0x07;
+				a->tiles[i].under = NULL;
+				a->tiles[i].data = NULL;
+			};
+			break;
+		case LAYER_TEMPLATE_CLASSIC:
+			for(i=0;i<w*h;i++)
+			{
+				int randomizer = rand()%64;
+				if(randomizer == 42 || randomizer == 24)
+				{
+					a->tiles[i].type = TILE_WALL;
+					// Hacks to skip empties.
+					a->tiles[i].chr = 32;
+					while(a->tiles[i].chr == 32)
+						a->tiles[i].chr = (u16)(rand()%254)+1;
+					a->tiles[i].col = (1+(rand()%15))+((rand()%8)<<4);
+				}
+				else if(randomizer == 17)
+				{
+					a->tiles[i].type = TILE_ROOF;
+					// Hacks to skip empties.
+					a->tiles[i].chr = 32;
+					while(a->tiles[i].chr == 32)
+						a->tiles[i].chr = (u16)(rand()%254)+1;
+					a->tiles[i].col = 240+(rand()%15);
+				}
+				else
+				{
+					a->tiles[i].type = TILE_FLOOR;
+					a->tiles[i].chr = 0x20;
+					a->tiles[i].col = 0x07;
+				}
+				a->tiles[i].under = NULL;
+				a->tiles[i].data = NULL;
+			}
+			break;
 	}
 	return a;
 };
 
+u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
+{
+	int i;
+	u32 i1;
+	u16 s1;
+	
+	// create a temp file
+	FILE *fp = tmpfile();
+	
+	if(fp == NULL)
+		return NULL;
+	
+	// write header
+	i1 = 0xCE1E571A; fwrite(&i1, 4, 1, fp);
+	s1 = LAYER_VERSION; fwrite(&s1, 2, 1, fp);
+	fputc(layer->w, fp);
+	fputc(layer->h, fp);
+	
+	// encode stream
+	for(i = 0; i < layer->w*layer->h; i++)
+	{
+		tile_t *t = &(layer->tiles[i]);
+		while(t != NULL)
+		{
+			int extflag = (t->chr > 0xFF || t->under != NULL);
+			
+			// type + extflag
+			fputc(extflag ? (t->type|0x80) : (t->type&~0x80)
+				,fp);
+			
+			// chr + col
+			fputc(t->chr&0xFF, fp);
+			if(extflag)
+				fputc(t->chr>>8, fp);
+			fputc(t->col, fp);
+			
+			// next tile
+			t = t->under;
+			if(extflag && t == NULL)
+				fputc(0x00, fp);
+		}
+	}
+	
+	// calculate size
+	// (i personally doubt you'd get a >=2GB layer --GM)
+	*rawlen = (int)ftell(fp);
+	if(fseek(fp, 0, SEEK_SET) != 0)
+	{
+		fprintf(stderr, "ERROR: could not seek to start of temp file\n");
+		perror("layer_serialise");
+		fclose(fp);
+		return NULL;
+	}
+	
+	// construct buffer
+	u8 *buf_raw = malloc(*rawlen);
+	if(buf_raw == NULL)
+	{
+		fprintf(stderr, "FATAL: COULD NOT ALLOCATE\n");
+		perror("layer_serialise");
+		abort();
+	}
+	
+	// very rare case of me checking the return value of fread --GM
+	if(fread(buf_raw, *rawlen, 1, fp) != (size_t)*rawlen)
+	{
+		fprintf(stderr, "FATAL: YOUR OS SUCKS\n");
+		perror("layer_serialise");
+		abort(); // die badly - this should NEVER happen!
+	}
+	
+	// construct compress buffer
+	// length calculation is based on the max size of a "store" block
+	// plus overhead, plus a little bit more breathing room too.
+	*cmplen = (u32)((((u64)*rawlen)*(u64)32005)/(u64)32000)+1024;
+	u8 *buf_cmp = malloc(*cmplen);
+	
+	// compress it!
+	uLongf cmplen_zlib = *cmplen;
+	int zerr = compress(buf_cmp, &cmplen_zlib, buf_raw, *rawlen);
+	if(zerr != Z_OK)
+	{
+		fprintf(stderr, "ERROR: could not compress layer - %i\n", zerr);
+		fclose(fp);
+		free(buf_raw);
+		free(buf_cmp);
+		return NULL;
+	}
+	
+	// set correct compression length;
+	*cmplen = cmplen_zlib;
+	
+	// tidy up and return
+	fclose(fp);
+	free(buf_raw);
+	
+	return buf_cmp;
+}
+
+layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
+{
+	int i;
+	
+	// allocate buffer
+	u8 *buf_raw = malloc(rawlen);
+	if(buf_raw == NULL)
+	{
+		fprintf(stderr, "FATAL: COULD NOT ALLOCATE MEMORY FOR RAW BUFFER\n");
+		perror("layer_unserialise");
+		abort();
+	}
+	
+	// decompress
+	uLongf rawlen_zlib = (uLongf)rawlen;
+	uLongf cmplen_zlib = (uLongf)cmplen;
+	int zerr = uncompress((Bytef *)buf_raw, &rawlen_zlib, buf_cmp, cmplen_zlib);
+	if(zerr != Z_OK)
+	{
+		fprintf(stderr, "ERROR: could not uncompress layer - %i\n", zerr);
+		free(buf_raw);
+		return NULL;
+	}
+	u8 *v = buf_raw;
+	
+	// load the header
+	if(*(u32 *)v != (u32)0xCE1E571A)
+	{
+		fprintf(stderr, "ERROR: incorrect magic number\n");
+		free(buf_raw);
+		return NULL;
+	}
+	v += 4;
+	
+	int version = *(u16 *)v;
+	v += 2;
+	
+	if(version < LAYER_LOWEST_VERSION || version > LAYER_VERSION)
+	{
+		fprintf(stderr, "ERROR: layer version %i unsupported, current version is %i\n",
+			version, LAYER_VERSION);
+		free(buf_raw);
+		return NULL;
+	}
+	
+	int w = *v++;
+	int h = *v++;
+	
+	if(w == 0 || h == 0)
+	{
+		fprintf(stderr, "ERROR: %i x %i are not valid layer dimensions\n", w, h);
+		free(buf_raw);
+		return NULL;
+	}
+	
+	// allocate layer
+	layer_t *layer = layer_new(w, h, LAYER_TEMPLATE_EMPTY);
+	if(layer == NULL)
+	{
+		fprintf(stderr, "EDOOFUS: layer_new given wrong parameters and crapped out :(\n");
+		free(buf_raw);
+		return NULL;
+	}
+	
+	// decode stream
+	for(i = 0; i < w*h; i++)
+	{
+		
+	}
+	
+	free(buf_raw);
+	return NULL;
+}
+
 layer_t *layer_dummy_request(s32 x, s32 y)
 {
-	layer_t *a = layer_new();
+	layer_t *a = layer_new(LAYER_WIDTH, LAYER_HEIGHT, LAYER_TEMPLATE_CLASSIC);
 	a->x = x; a->y = y;
 	return a;
 };
@@ -88,9 +287,12 @@ void map_init(void)
 
 void layer_unload(int i)
 {
+	layer_set[i] = LAYER_UNALLOC;
+	if(layers[i] == NULL)
+		return;
+	
 	net_layer_release(layers[i]->x,layers[i]->y,i);
 	layer_free(layers[i]);
-	layer_set[i] = LAYER_UNALLOC;
 }
 
 layer_t *map_get_existing_layer(s32 x, s32 y)
@@ -107,21 +309,30 @@ layer_t *map_get_existing_layer(s32 x, s32 y)
 layer_t *map_get_empty_layer(s32 x, s32 y)
 {
 	u8 i;
-	// Create empty layer
-	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]==LAYER_UNUSED)
-			layer_unload(i);
+	
+	// Check if this layer is already requested
+	for(i=0;i<LAYER_SIZE;i++)
 		if(layer_set[i]==LAYER_REQUESTED)
+			if(layer_x[i] == x && layer_y[i] == y)
+				return NULL;
+	
+	// Create empty layer
+	for(i=0;i<LAYER_SIZE;i++)
+	{
+		if(layer_set[i]==LAYER_UNUSED)
 			layer_unload(i);
 		if(layer_set[i]==LAYER_UNALLOC)
 		{
 			layers[i] = net_layer_request(x,y,i);
+			layer_x[i] = x;
+			layer_y[i] = y;
 			
 			if(layers[i] == NULL)
 			{
 				layer_set[i] = LAYER_REQUESTED;
+				return NULL;
 			} else {
-				if(layers[i]->x != x || layers[i]->y != y)
+				if(layer_x[i] != x || layer_y[i] != y)
 					return NULL;
 				layer_set[i] = LAYER_USED;
 				return layers[i];
@@ -135,7 +346,7 @@ void map_layer_set_unused(s32 x, s32 y)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]!=LAYER_UNALLOC && layers[i]->x==x && layers[i]->y==y)
+		if(layers[i] != NULL && layer_x[i]==x && layer_y[i]==y)
 		{
 			layer_set[i] = LAYER_UNUSED;
 			return;
@@ -147,7 +358,7 @@ void map_layer_set_used(s32 x, s32 y)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) {
-		if(layer_set[i]!=LAYER_UNALLOC && layers[i]->x==x && layers[i]->y==y)
+		if(layers[i] != NULL && layer_x[i]==x && layer_y[i]==y)
 		{
 			layer_set[i] = LAYER_USED;
 			return;
@@ -159,7 +370,7 @@ void map_layer_set_unused_all(void)
 {
 	u8 i;
 	for(i=0;i<LAYER_SIZE;i++) 
-		if(layer_set[i]!=LAYER_UNALLOC)
+		if(layers[i] != NULL)
 			layer_set[i] = LAYER_UNUSED;
 }
 
@@ -218,7 +429,7 @@ void layer_push_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 	{
 		fprintf(stderr, "FATAL: COULD NOT ALLOCATE MEMORY FOR NEW TILE!\n");
 		perror("layer_push_tile");
-		exit(44); // 4 to indicate death, 44 to indicate we're DYING HORRIBLY
+		abort(); // DIE HORRIBLY
 	}
 	
 	// ok, copy old tile across to, *ahem*, "new"

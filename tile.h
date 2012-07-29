@@ -4,7 +4,7 @@
 #include "common.h"
 
 inline char* tile_get_name(u8 type);
-inline u16 tile_get_preview_chr(u8 type);
+inline u16 tile_get_preview_char(u8 type);
 inline u8 tile_get_preview_color(u8 type);
 
 inline tile_t tile_dummy(void);

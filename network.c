@@ -42,7 +42,7 @@ char *net_pktstr_s2c[128] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
-	NULL, "441", "S", "", "441", NULL, NULL, NULL,
+	NULL, "44144", "S", "", "441", NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	"244", "2", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -60,7 +60,8 @@ int net_initialised = 0;
 netplayer_t net_player;
 
 // server stuff
-int server_sockfd = 0;
+int server_sockfd = -1;
+netplayer_t *server_players[65536];
 
 int net_init()
 {
@@ -69,12 +70,14 @@ int net_init()
 	
 	// Prepare the client stuff
 	net_player.id = 0;
-	net_player.sockfd = 0;
-	net_player.pkt_head = NULL;
-	net_player.pkt_tail = NULL;
+	net_player.sockfd = -1;
+	net_player.pkt_in_head = NULL;
+	net_player.pkt_in_tail = NULL;
+	net_player.pkt_out_head = NULL;
+	net_player.pkt_out_tail = NULL;
 	
 	// Prepare the server stuff
-	server_sockfd = 0;
+	server_sockfd = -1;
 	
 	// TODO: special treatment for Windows
 	// required like everything else Microsoft ever made
@@ -155,10 +158,11 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 	{
 		fprintf(stderr, "FATAL: COULD NOT ALLOCATE PACKET OF SIZE %i\n", size);
 		perror("net_pack");
-		exit(44);
+		abort();
 	}
 	
 	// Fill in the fields
+	pkt->length = size+1;
 	pkt->cmd = cmd;
 	pkt->next = NULL;
 	
@@ -205,20 +209,22 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 	va_end(args);
 	
 	// Append to the end of the list
-	if(np->pkt_tail == NULL)
+	if(np->pkt_out_tail == NULL)
 	{
-		np->pkt_head = np->pkt_tail = pkt;
+		np->pkt_out_head = np->pkt_out_tail = pkt;
 	} else {
-		np->pkt_tail->next = pkt;
-		np->pkt_tail = pkt;
+		np->pkt_out_tail->next = pkt;
+		np->pkt_out_tail = pkt;
 	}
+	
+	return pkt;
 }
 
 layer_t *net_layer_request(s32 x, s32 y, u8 position)
 {
 	printf("net_layer_request: %d,%d, pos %d\n",x,y,position);
 	
-	if(net_player.sockfd != 0)
+	if(net_player.sockfd != -1)
 	{
 		net_pack(NULL, PKT_LAYER_REQUEST,
 			x, y, position);
@@ -233,29 +239,142 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 void net_layer_release(s32 x, s32 y, u8 position)
 {
 	printf("net_layer_release: %d,%d, pos %d\n",x,y,position);
-	if(net_player.sockfd != 0)
+	if(net_player.sockfd != -1)
 	{
 		net_pack(NULL, PKT_LAYER_RELEASE,
 			x, y, position);
 	}
 }
 
-int server_init()
+void net_handle_s2c(netpacket_t *pkt)
 {
-	if(net_init())
-		return 1;
+	switch(pkt->cmd)
+	{
+		case PKT_BLOCK_SET:
+			break;
+		case PKT_BLOCK_PUSH:
+			break;
+		case PKT_BLOCK_POP:
+			break;
+		
+		case PKT_ENTITY_MOVEMENT:
+			break;
+		case PKT_ENTITY_CREATION:
+			break;
+		
+		case PKT_LAYER_REQUEST:
+			break;
+		case PKT_LAYER_START:
+			break;
+		case PKT_LAYER_DATA:
+			break;
+		case PKT_LAYER_END:
+			break;
+		case PKT_LAYER_RELEASE:
+			break;
+		
+		case PKT_ENTITY_POSITION:
+			break;
+		case PKT_ENTITY_DESTRUCTION:
+			break;
+		
+		case PKT_CHAT:
+			break;
+		
+		case PKT_LOGIN:
+			break;
+		case PKT_PING:
+			break;
+		case PKT_PONG:
+			break;
+		case PKT_PLAYER_ID:
+			break;
+		case PKT_KICK:
+			break;
+	}
 }
 
-int server_run_dedicated()
+void net_handle_c2s(netpacket_t *pkt)
 {
-	printf("Hi, I'm a server that's *dedicated* to giving YOU a return code of 0.\n");
-	
-	if(server_init())
+	switch(pkt->cmd)
 	{
-		printf("UNFORTUNATELY, something went wrong, so have a 1 instead.\n");
-		return 1;
+		case PKT_BLOCK_SET:
+			break;
+		case PKT_BLOCK_PUSH:
+			break;
+		case PKT_BLOCK_POP:
+			break;
+		
+		case PKT_ENTITY_MOVEMENT:
+			break;
+		case PKT_ENTITY_CREATION:
+			break;
+		
+		case PKT_LAYER_REQUEST:
+			break;
+		case PKT_LAYER_START:
+			break;
+		case PKT_LAYER_DATA:
+			break;
+		case PKT_LAYER_END:
+			break;
+		case PKT_LAYER_RELEASE:
+			break;
+		
+		case PKT_ENTITY_POSITION:
+			break;
+		case PKT_ENTITY_DESTRUCTION:
+			break;
+		
+		case PKT_CHAT:
+			break;
+		
+		case PKT_LOGIN:
+			break;
+		case PKT_PING:
+			break;
+		case PKT_PONG:
+			break;
+		case PKT_PLAYER_ID:
+			break;
+		case PKT_KICK:
+			break;
+	}
+}
+
+void net_recv()
+{
+	// Parse any received packets.
+	// TODO!
+}
+
+void net_update()
+{
+	// Check: are we actually networked?
+	if(net_player.sockfd == -1)
+		return;
+	
+	// Check: do we have any packets in the receive queue?
+	netpacket_t *pkt, *npkt;
+	
+	for(pkt = net_player.pkt_in_head; pkt != NULL; pkt = npkt)
+	{
+		// Handle + free packet.
+		net_handle_s2c(pkt);
+		npkt = pkt->next;
+		free(pkt);
 	}
 	
-	return 0;
+	// Assemble packets for the send queue.
+	// TODO!
+}
+
+void server_update()
+{
+	// Check: are we actually running a server?
+	if(server_sockfd == -1)
+		return;
+	
+	// TODO!
 }
 
