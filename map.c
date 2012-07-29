@@ -377,7 +377,7 @@ layer_t *map_get_existing_layer(s32 x, s32 y)
 	return NULL;
 }
 
-layer_t *map_get_empty_layer(s32 x, s32 y)
+layer_t *map_get_net_layer(s32 x, s32 y)
 {
 	u8 i;
 	
@@ -397,7 +397,7 @@ layer_t *map_get_empty_layer(s32 x, s32 y)
 			layers[i] = net_layer_request(x,y,i);
 			layer_x[i] = x;
 			layer_y[i] = y;
-			layer_save(layers[i]);
+
 			if(layers[i] == NULL)
 			{
 				layer_set[i] = LAYER_REQUESTED;

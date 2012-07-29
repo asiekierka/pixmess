@@ -7,7 +7,7 @@ void server_load_chunk(s32 x, s32 y)
 	s32 px = x/LAYER_WIDTH;
 	s32 py = y/LAYER_HEIGHT;
 	if(!map_get_existing_layer(px,py))
-		map_get_empty_layer(px,py);
+		map_get_net_layer(px,py);
 }
 
 void server_set_tile(s32 x, s32 y, tile_t tile)

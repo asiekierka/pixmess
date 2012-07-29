@@ -18,7 +18,7 @@ void map_init(void);
 void layer_free(layer_t *layer);
 layer_t *layer_new(int w, int h, int template);
 
-layer_t *map_get_empty_layer(s32 x, s32 y);
+layer_t *map_get_net_layer(s32 x, s32 y);
 layer_t *map_get_existing_layer(s32 x, s32 y);
 layer_t *map_get_file_layer(s32 x, s32 y);
 
