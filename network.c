@@ -259,6 +259,16 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 		nlayer->x = layer->x;
 		nlayer->y = layer->y;
 		
+		u16 i;
+		for(i=0;i<4096;i++)
+		{
+			if(!((nlayer->tiles[i].type == layer->tiles[i].type)
+				|| (nlayer->tiles[i].chr == layer->tiles[i].chr)
+				|| (nlayer->tiles[i].col == layer->tiles[i].col)
+				|| (nlayer->tiles[i].datalen == layer->tiles[i].datalen)
+				  ))
+				printf("DEBUG: Tile %d is incorrect!",i);
+		}
 		layer_free(layer);
 		return nlayer;
 	}
