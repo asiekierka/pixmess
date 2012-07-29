@@ -370,6 +370,7 @@ void layer_unload(int i)
 		return;
 	
 	net_layer_release(layers[i]->x,layers[i]->y,i);
+	layer_save(layers[i]);
 	layer_free(layers[i]);
 }
 
@@ -404,7 +405,7 @@ layer_t *map_get_empty_layer(s32 x, s32 y)
 			layers[i] = net_layer_request(x,y,i);
 			layer_x[i] = x;
 			layer_y[i] = y;
-			
+			layer_save(layers[i]);
 			if(layers[i] == NULL)
 			{
 				layer_set[i] = LAYER_REQUESTED;
@@ -415,6 +416,30 @@ layer_t *map_get_empty_layer(s32 x, s32 y)
 				layer_set[i] = LAYER_USED;
 				return layers[i];
 			}
+		}
+	}
+	return NULL;
+}
+
+layer_t *map_get_file_layer(s32 x, s32 y)
+{
+	u8 i;
+	
+	// Load layer
+	for(i=0;i<LAYER_SIZE;i++)
+	{
+		if(layer_set[i]==LAYER_UNUSED)
+			layer_unload(i);
+		if(layer_set[i]==LAYER_UNALLOC)
+		{
+			layers[i] = layer_load(x,y);
+			if(layers[i]!=NULL)
+			{
+				layer_x[i] = x;
+				layer_y[i] = y;
+				layer_set[i] = LAYER_USED;
+			}
+			return layers[i];
 		}
 	}
 	return NULL;
