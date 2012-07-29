@@ -590,4 +590,3 @@ void map_pop_tile(s32 x, s32 y)
 	if(chunk == NULL) return;
 	layer_pop_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),chunk);
 }
-

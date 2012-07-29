@@ -163,5 +163,8 @@ int main(int argc, char *argv[])
 		sfp_event_tick();
 	}
 	
+	// TODO: networkise this
+	map_save();
+	
 	return 0;
 }

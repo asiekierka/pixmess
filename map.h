@@ -43,6 +43,12 @@ void map_layer_set_used_rendered(s32 x, s32 y);
 
 u8 layer_save(layer_t *layer);
 layer_t* layer_load(s32 x, s32 y);
+void map_save();
+
+extern layer_t *layers[];
+extern u8 layer_set[];
+extern s32 layer_x[];
+extern s32 layer_y[];
 
 enum
 {

@@ -25,7 +25,10 @@ char* layer_rw_path(s32 x, s32 y)
 	// TODO: get correct path separator, somehow
 	char* path1 = malloc(sizeof(char)*512);
 	mkdir_if_none(mapdir);
-	sprintf(path1,"%s/%d,%d.cnk",mapdir,x,y);	
+	snprintf(path1, 511, "%s/%d",mapdir,y);
+	mkdir_if_none(path1);
+	snprintf(path1, 511, "%s/%d/%d.cnk",mapdir,y,x);
+	
 	return path1;
 }
 
@@ -91,7 +94,7 @@ u8 layer_save(layer_t *layer)
 		fprintf(stderr, "ERROR opening file \"%s\" for save\n", path);
 		perror("layer_save");
 		free(path);
-		return NULL;
+		return 1;
 	}
 	free(path);
 	
@@ -103,4 +106,13 @@ u8 layer_save(layer_t *layer)
 	
 	fclose(file);
 	return 0;
+}
+
+void map_save()
+{
+	int i;
+	
+	for(i = 0; i < LAYER_SIZE; i++)
+		if(layers[i] != NULL)
+			layer_save(layers[i]);
 }
