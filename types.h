@@ -27,7 +27,7 @@ struct tile
 	u8 type;
 	u16 chr;
 	u8 col;
-	u8 datalen;
+	u16 datalen;
 	
 	tile_t *under;
 	u8 *data;
@@ -74,6 +74,7 @@ enum
 	MAP_FLAG_U16CHAR = 1,
 	MAP_FLAG_UNDER = 2,
 	MAP_FLAG_DATA = 4,
+	MAP_FLAG_EXT_DATALEN = 8,
 };
 
 #endif /* _SFP_TYPES_H_ */

@@ -125,7 +125,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 		while(t != NULL)
 		{
 			u8 flags = ((t->chr > 0xFF) || (t->under != NULL)<<1 || (t->data != NULL)<<2);
-			
+			flags |= ((t->datalen > 0xFF)<<3);
 			// flags & type
 			fputc(flags,fp);
 			fputc(t->type,fp);
@@ -142,8 +142,12 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 				if(t->data == NULL)
 				{
 					fputc(0x00, fp);
+					if(flags&MAP_FLAG_EXT_DATALEN)
+						fputc(0x00, fp);
 				} else {
-					fputc(t->datalen, fp);
+					fputc(t->datalen&0xFF, fp);
+					if(flags&MAP_FLAG_EXT_DATALEN)
+						fputc(t->datalen>>8, fp);
 					fwrite(t->data, t->datalen, 1, fp);
 				}
 			}
@@ -300,6 +304,8 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 			if(flags&MAP_FLAG_DATA)
 			{
 				t->datalen = *(v++);
+				if(flags&MAP_FLAG_EXT_DATALEN)
+					t->datalen |= ((*(v++))<<8);
 				t->data = NULL;
 				//printf("chr=%04X col=%02X datalen=%02X\n", t->chr, t->col, t->datalen);
 				if(t->datalen != 0)
