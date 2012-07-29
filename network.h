@@ -14,6 +14,8 @@
 #include <arpa/inet.h>
 #endif
 
+#define FD_SINGLEPLAYER -2
+
 int net_init();
 
 layer_t *net_layer_request(s32 x, s32 y, u8 position);

@@ -75,6 +75,9 @@ int net_init()
 	net_player.pkt_in_tail = NULL;
 	net_player.pkt_out_head = NULL;
 	net_player.pkt_out_tail = NULL;
+
+	// SINGLEPLAYER, TODO: MULTIPLAYER
+	net_player.sockfd = FD_SINGLEPLAYER;
 	
 	// Prepare the server stuff
 	server_sockfd = -1;
@@ -224,12 +227,8 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 {
 	printf("net_layer_request: %d,%d, pos %d\n",x,y,position);
 	
-	if(net_player.sockfd != -1)
+	if(net_player.sockfd == FD_SINGLEPLAYER)
 	{
-		net_pack(NULL, PKT_LAYER_REQUEST,
-			x, y, position);
-		return NULL;
-	} else {
 		// We are a server running on the localhosts.
 		layer_t* layer = layer_load(x,y);
 		if(layer == NULL)
@@ -240,13 +239,18 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 		}
 		return layer;
 	}
-	
+	else if(net_player.sockfd != -1)
+	{
+		net_pack(NULL, PKT_LAYER_REQUEST,
+			x, y, position);
+	}
+	return NULL;
 }
 
 void net_layer_release(s32 x, s32 y, u8 position)
 {
 	printf("net_layer_release: %d,%d, pos %d\n",x,y,position);
-	if(net_player.sockfd != -1)
+	if(net_player.sockfd != -1 && net_player.sockfd != FD_SINGLEPLAYER)
 	{
 		net_pack(NULL, PKT_LAYER_RELEASE,
 			x, y, position);
