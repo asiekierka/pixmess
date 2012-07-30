@@ -7,7 +7,7 @@ Mathematical definition...
 
 We are working with signed 8-bit mono sound streams.
 
-Let q,s,Ri,Rd be integers.
+Let q,s,Ri,Rd be signed integers.
 Let Ri,Rd be chosen constants. ((7,20) is reasonable.)
 
 Let q be the "charge", initialised to 0.
@@ -17,7 +17,7 @@ Let Rd be the strength decrease.
 
 For every input sample v, we output bit b.
 
-If v > q or q == v == 255, then set b to 1;
+If v > q or q == v == 127, then set b to 1;
   otherwise set b to 0.
 
 Let b' be the previous instance of b,
@@ -83,7 +83,7 @@ def f(blri, blrd):
 			v = (ord(c)^0x80)-0x80
 			
 			t = -128
-			if v >= lq and v != 0:
+			if v >= lq or v == -128:
 				d |= 0x80
 				t = 127
 			
