@@ -67,10 +67,12 @@ load_module(modname) S/Cg/Cl
 query_local(querystr, ...) Cg/Cl
 query_game(querystr, ...) Cg/Cl
 	Sends a query to the given client sandbox.
+	Blocks until the function returns.
 	
 	DANGER: SENDING STUFF YOU DON'T ASSEMBLE FOR THE GIVEN SANDBOX IS JUST
-	ASKING FOR TROUBLE. IF YOU WOULD LIKE TO PROVIDE A FUNCTION, ADD
-	ANOTHER QUERY FOR IT.
+	ASKING FOR TROUBLE. IF YOU WOULD LIKE TO PROVIDE A FUNCTION FROM ONE
+	SIDE TO THE OTHER SIDE, ADD ANOTHER QUERY FOR IT ON THE FIRST SIDE, SO
+	THE SECOND SIDE CAN JUST QUERY THE FIRST SIDE.
 	
 	DANGER: UNLESS YOU HAVE A GOOD REASON, REFRAIN FROM SENDING QUERIES TO
 	YOUR OWN SANDBOX. THERE IS NO WAY TO TELL WHICH SANDBOX IS DOING THE
@@ -82,12 +84,152 @@ query_game(querystr, ...) Cg/Cl
 
 on_tick(fn()) S/Cg/Cl
 	Sets the function to be called every tick (30Hz).
+	
+	You SHOULD be doing your code in this function.
 
 on_query(fn(querystr, ...)) Cg/Cl
 	Sets the function to be called on a cross-sandbox query.
+
+on_chat(fn(id, str)) S/Cg
+	Sets the function to be called when someone posts to the chat.
+	
+	id is undefined for the clientside version.
 
 *
 * OK, now onto some interesting stuff.
 *
 
-TODO!
+Note, bcf is the broadcast flag.
+If it is clear, it is a purely local change.
+If it is set, it is sent as a usual network packet where applicable.
+In certain cases it will NOT be broadcast.
+
+client_id() Cg
+	Get the client's player ID.
+
+player_kick(id, reason) S
+	Kick the player from the server.
+	
+	Will not work on lua entities - use entity_destroy instead.
+
+map_tile_set(bcf, x, y, type, chr, col) S/Cg
+map_tile_push(bcf, x, y, type, chr, col) S/Cg
+map_tile_pop(bcf, x, y) S/Cg
+	The usual map set/push/pop stuff.
+	
+	Set:
+		Sets the top tile on the tile stack.
+	
+	Push:
+		If possible, push the tile onto the top of the stack.
+		Otherwise, set the top instead.
+	
+	Pop:
+		Pops the top tile off the stack.
+		If there is only one tile on the top, set it to:
+			- type 0 (dummy)
+			- char 32 (space)
+			- colour 7 (light grey on black by default)
+			- no data
+
+map_tile_get_stack(x, y) S/Cg
+	Get the tile stack as a Lua table.
+
+overlay_tile_set(x, y, chr, col) Cg
+	Sets a tile on the overlay.
+	
+	chr == 0 sets the overlay's tile transparent.
+
+entity_is_lua() S/Cg
+	Checks if said entity is a lua entity or a real player.
+	
+	Note, for serverside lua entities,
+	  this function will return true on the serverside,
+	    but false on the clientside.
+	
+entity_pos_set(bcf, id, x, y) S/Cg
+	Sets the given entity position.
+	
+	Note, if id == -1, and this is called from the client,
+	this will set the local client's position.
+	
+	From the client side, this can only be broadcast
+	  if id == -1 or id == the player ID.
+	If you want to update client-only entities,
+	  use channels as explained later.
+
+id = entity_new(bcf, x, y, chr, col, name) S/Cg
+	Creates a new lua entity.
+	
+	Client-created entities will not be broadcast to the server.
+
+entity_destroy(bcf, id) S/Cg
+	Removes an entity.
+	
+	Returns true on success and false on failure.
+	
+	The broadcast flag where inappropriate is silently ignored.
+	
+	Reasons for failure:
+		The client attempted to remove a non-lua entity.
+		
+		The entity of said ID does not exist.
+		
+		The server attempted to remove a player.
+		Use player_kick() if you want to do this.
+
+entity_appearance_set(bcf, id, chr, col, name) S/Cg
+	Changes an entity's appearance.
+	
+	Note, if id == -1, and this is called from the client,
+	this will set the local client's appearance.
+
+chat_print(str) Cg
+chat_send(id, str) S/Cg
+	Chat handling.
+	
+	chat_print just prints a message to the chat scrollback.
+	
+	chat_send sends a message using packet $58 = chat.
+	It differs slightly in the way it works.
+	
+	If called from the clientside, id is ignored.
+	Otherwise, if id == -1, send to all.
+
+*
+* And this is where it gets really interesting.
+*
+
+cid = chn_open(id, name) S/Cg
+	Opens a channel with a given name.
+	
+	Both client and server must open a channel with the same name before
+	any communication happens.
+	
+	id is the player ID, and is ignored on the client side.
+	Channels are strictly client<->server.
+
+result, ... = chn_read(cid, fmt) S/Cg
+result = chn_write(cid, fmt, ...) S/Cg
+	Read/write a datagram to/from the channel.
+	
+	The format string values are as follows:
+		1: int8
+		2: int16
+		4: int32
+		s: pstr8
+		S: pstr16
+	
+	Note, pstr denotes a pascal string (length, then data).
+	
+	If the channel is closed, result will be nil.
+	
+	If the channel does not have new packets yet, result will be false
+		(reading only!).
+	
+	Otherwise, result will be true.
+
+chn_close(cid) S/Cg
+	Close the channel.
+	
+	You can reopen it if necessary.
