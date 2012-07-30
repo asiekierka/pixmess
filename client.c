@@ -5,8 +5,8 @@
 
 void client_load_chunk(s32 x, s32 y)
 {
-	s32 px = x/LAYER_WIDTH;
-	s32 py = y/LAYER_HEIGHT;
+	s32 px = divneg(x,LAYER_WIDTH);
+	s32 py = divneg(y,LAYER_HEIGHT);
 	if(!map_get_existing_layer(&client_map, px,py))
 		map_get_net_layer(&client_map, px,py);
 }

@@ -505,8 +505,8 @@ void map_layer_set_unused_all(map_t *map)
 
 void map_layer_set_used_rendered(map_t *map, s32 topx, s32 topy)
 {
-	s32 chunk_x = topx/LAYER_WIDTH;
-	s32 chunk_y = topy/LAYER_HEIGHT;
+	s32 chunk_x = divneg(topx,LAYER_WIDTH);
+	s32 chunk_y = divneg(topy,LAYER_HEIGHT);
 	map_layer_set_unused_all(map);
 	map_layer_set_used(map,chunk_x,chunk_y);
 	map_layer_set_used(map,chunk_x+1,chunk_y);
@@ -591,36 +591,36 @@ void layer_pop_tile(u8 x, u8 y, layer_t *layer)
 
 tile_t map_get_tile(map_t *map, s32 x, s32 y)
 {
-	s32 chunk_x = x/LAYER_WIDTH;
-	s32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return tile_dummy();
-	return layer_get_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),chunk);
+	return layer_get_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
 }
 
 void map_set_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
-	s32 chunk_x = x/LAYER_WIDTH;
-	s32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
-	layer_set_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
+	layer_set_tile(absmod(x,chunk->w),absmod(y,chunk->h),tile,chunk);
 }
 
 void map_push_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
-	s32 chunk_x = x/LAYER_WIDTH;
-	s32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
-	layer_push_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),tile,chunk);
+	layer_push_tile(absmod(x,chunk->w),absmod(y,chunk->h),tile,chunk);
 }
 
 void map_pop_tile(map_t *map, s32 x, s32 y)
 {
-	s32 chunk_x = x/LAYER_WIDTH;
-	s32 chunk_y = y/LAYER_HEIGHT;
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
-	layer_pop_tile(absmod(x,LAYER_WIDTH),absmod(y,LAYER_HEIGHT),chunk);
+	layer_pop_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
 }
