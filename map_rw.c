@@ -6,11 +6,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-//extern int errno;
-
 // TODO: move to misc.c
-
-char *mapdir = "xmap";
 
 void mkdir_if_none(char* path)
 {
@@ -20,21 +16,21 @@ void mkdir_if_none(char* path)
 }
 
 // PLEASE FREE THE PATH YOU GET WHEN YOU'RE DONE WITH IT. --GM
-char* layer_rw_path(s32 x, s32 y)
+char* layer_rw_path(map_t *map, s32 x, s32 y)
 {
 	// TODO: get correct path separator, somehow
 	char* path1 = malloc(sizeof(char)*512);
-	mkdir_if_none(mapdir);
-	snprintf(path1, 511, "%s/%d",mapdir,y);
+	mkdir_if_none(map->fpath);
+	snprintf(path1, 511, "%s/%d",map->fpath,y);
 	mkdir_if_none(path1);
-	snprintf(path1, 511, "%s/%d/%d.cnk",mapdir,y,x);
+	snprintf(path1, 511, "%s/%d/%d.cnk",map->fpath,y,x);
 	
 	return path1;
 }
 
-layer_t* layer_load(s32 x, s32 y)
+layer_t* layer_load(map_t *map, s32 x, s32 y)
 {
-	char* path = layer_rw_path(x,y);
+	char* path = layer_rw_path(map,x,y);
 	FILE *file = fopen(path,"rb");
 	if(file == NULL)
 	{
@@ -81,13 +77,13 @@ layer_t* layer_load(s32 x, s32 y)
 	return layer;
 }
 
-u8 layer_save(layer_t *layer)
+u8 layer_save(map_t *map, layer_t *layer)
 {
 	int rawlen, cmplen;
 	
 	u8* data = layer_serialise(layer,&rawlen,&cmplen);
 	
-	char* path = layer_rw_path(layer->x,layer->y);
+	char* path = layer_rw_path(map,layer->x,layer->y);
 	FILE *file = fopen(path,"wb");
 	if(file == NULL)
 	{
@@ -108,11 +104,11 @@ u8 layer_save(layer_t *layer)
 	return 0;
 }
 
-void map_save()
+void map_save(map_t *map)
 {
 	int i;
 	
 	for(i = 0; i < LAYER_SIZE; i++)
-		if(layers[i] != NULL)
-			layer_save(layers[i]);
+		if(map->layers[i] != NULL)
+			layer_save(map, map->layers[i]);
 }

@@ -1,7 +1,7 @@
 Network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #03
+Draft #04
 
 Layers:
 	See doc/layer.txt for format details.
@@ -28,13 +28,13 @@ Packets:
 
 $00 = *RESERVED*
 
-$01 = block_set(w16 x, w16 y, s8 typ, s8 col, s8 ch) *->*
-$02 = block_push(w16 x, w16 y, s8 typ, s8 col, s8 ch) *->*
+$01 = block_set(s32 x, s32 y, s8 typ, s8 col, s16 ch) *->*
+$02 = block_push(s32 x, s32 y, s8 typ, s8 col, s16 ch) *->*
 	Sets or pushes a block onto a layer.
 	The difference is that "pushing" makes a copy of the current tile,
 	and then sticks that underneath the new tile.
 	
-$03 = block_pop(w16 x, w16 y) *->*
+$03 = block_pop(s32 x, s32 y) *->*
 	Pops a block off the top of a layer.
 	
 	If there is no under type, set the tile to a col=0x07 ch=0x20 dummy.
@@ -56,8 +56,8 @@ $40 = layer_request(s32 x, s32 y, u8 index) C->S
 	Requests a layer chunk from the server.
 
 $41 = layer_start(s32 x, s32 y, u8 index, u32 rawlen, u32 cmplen) S->C
-$42 = layer_data(pstr16 data) S->C
-$43 = layer_end() S->C
+$42 = layer_data(u8 index, pstr16 data) S->C
+$43 = layer_end(u8 index) S->C
 	Sends a GZipped layer chunk in pieces.
 	These three must appear in the correct fashion of $41 ($42)+ $43.
 	

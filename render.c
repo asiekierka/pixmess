@@ -7,7 +7,7 @@
 // This code is insanely DRY.
 
 u8 palette[16*3];
-u8 font[256*8];
+u8 font[32768*8];
 
 u8 render_initialized = 0;
 
@@ -19,9 +19,10 @@ u32 sfp_get_palette(u8 id)
 int sfp_init_render()
 {
 	// Load defaults.
+	memset(font, 0, 32768*8);
 	memcpy(font, font_cga, 256*8);
 	memcpy(palette, palette_cga, 16*3);
-
+	
 	// Now call the real deal.
 	if(sfp_render_init_video())
 		return 1;
@@ -64,7 +65,7 @@ void sfp_putc_##putctype(int x, int y, u8 bg, u8 fg, u16 chr) \
 	u8 *bgp = &palette[bg*3]; \
 	u32 realfg = fgp[2] | (fgp[1] << 8) | (fgp[0] << 16); \
 	u32 realbg = bgp[2] | (bgp[1] << 8) | (bgp[0] << 16); \
-	u8 *fptr = &font[chr*8]; \
+	u8 *fptr = &font[(chr & 0x7FFF)*8]; \
 	sfp_render_putc_##putctype(x, y, realbg, realfg, fptr); \
 } \
 \

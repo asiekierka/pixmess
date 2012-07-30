@@ -14,12 +14,30 @@
 #include <arpa/inet.h>
 #endif
 
-#define FD_SINGLEPLAYER -2
+// IMMEDIATE: everything returns instantly, no server running.
+// note, this requires effort to keep it in sync
+// with the multiplayer code.
+#define FD_LOCAL_IMMEDIATE -1
+
+// PKTCOPY: copies the packet structures across.
+#define FD_LOCAL_PKTCOPY -2
+
+// PKTPARSE: actually buffer and parse packets.
+// hypothetically, the most accurate singleplayer mode.
+#define FD_LOCAL_PKTPARSE -3
 
 int net_init();
 
 layer_t *net_layer_request(s32 x, s32 y, u8 position);
 void net_layer_release(s32 x, s32 y, u8 position);
+void net_block_set(s32 x, s32 y, tile_t tile);
+void net_block_push(s32 x, s32 y, tile_t tile);
+void net_block_pop(s32 x, s32 y);
+
+void net_map_save();
+
+void net_update();
+void server_update();
 
 enum
 {

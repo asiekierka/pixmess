@@ -51,7 +51,7 @@ void display (player_t *p)
 	s32 ry = p->y-(SFP_FIELD_HEIGHT)/2;
 	s32 ory = ry;
 	tile_t tile;
-	map_layer_set_used_rendered(rx,ry);
+	map_layer_set_used_rendered(&client_map, rx, ry);
 	for(j=0;j<SFP_FIELD_HEIGHT;j++)
 	{
 		for(i=0;i<SFP_FIELD_WIDTH;i++)
@@ -157,14 +157,20 @@ int main(int argc, char *argv[])
 		frame_counter++;
 		
 		sfp_render_end();
+		
+		// network!
+		net_update();
+		server_update();
+		
+		// TODO: throttle it properly
+		// TODO: check for network stuff during this period
 		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
 		
 		sfp_event_poll();
 		sfp_event_tick();
 	}
 	
-	// TODO: networkise this
-	map_save();
+	net_map_save();
 	
 	return 0;
 }

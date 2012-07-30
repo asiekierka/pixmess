@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define LAYER_SIZE 64 /* 32-255, no promises for lower, will crash on higher */
+
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
@@ -55,11 +57,26 @@ typedef struct netplayer
 {
 	u16 id;
 	int sockfd;
+	player_t player;
 	netpacket_t *pkt_in_head, *pkt_in_tail;
 	netpacket_t *pkt_out_head, *pkt_out_tail;
 	int pkt_out_pos;
 	int pkt_in_pos;
 } netplayer_t;
+
+typedef struct map
+{
+	char *fpath;
+	layer_t *layers[LAYER_SIZE];
+	u8 layer_set[LAYER_SIZE];
+	s32 layer_x[LAYER_SIZE];
+	s32 layer_y[LAYER_SIZE];
+	
+	u8 *layer_cmpbuf[LAYER_SIZE];
+	u32 layer_cmplen[LAYER_SIZE];
+	u32 layer_cmppos[LAYER_SIZE];
+	u32 layer_rawlen[LAYER_SIZE];
+} map_t;
 
 enum
 {
@@ -67,6 +84,7 @@ enum
 	LAYER_UNUSED,
 	LAYER_USED,
 	LAYER_REQUESTED,
+	LAYER_LOADING,
 };
 
 #define MAP_FLAG_U16CHAR 1

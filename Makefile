@@ -6,7 +6,7 @@
 # make CC=i686-pc-mingw32-gcc CFLAGS=-I/usr/i686-pc-mingw32/sys-root/mingw/include/SDL/ BINNAME=c64pixels.exe
 
 LIBS = `sdl-config --libs` -lz
-CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter
+CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable
 LDFLAGS = -g
 BINNAME = pixmess
 PLATFORM = sdl

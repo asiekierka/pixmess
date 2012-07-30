@@ -6,7 +6,7 @@ u8 players_set[PLAYER_AMOUNT];
 
 player_t *player_get(u16 id)
 {
-	if(id>=PLAYER_AMOUNT) return NULL;
+	if((u32)id>=PLAYER_AMOUNT) return NULL;
 	if(players_set[PLAYER_AMOUNT-1]==0)
 	{
 		players[id] = (player_t *)malloc(sizeof(player_t));
@@ -22,7 +22,7 @@ player_t *player_get(u16 id)
 
 void player_remove(u16 id)
 {
-	if(id<PLAYER_AMOUNT)
+	if((u32)id<PLAYER_AMOUNT)
 	{
 		players_set[id]=0;
 		free(players[id]);
