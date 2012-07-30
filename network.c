@@ -63,6 +63,7 @@ netplayer_t net_player;
 
 // server stuff
 int server_sockfd = -1;
+int server_sockfd_socketpair = -1;
 netplayer_t *server_players[65536];
 int server_player_top = 0;
 
@@ -112,19 +113,25 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 	switch(fmt[i])
 	{
 		case '1':
-			size += 1-0;
+			size += 1;
+			va_arg(args, int);
+			break;
 		case '2':
-			size += 2-1;
+			size += 2;
+			va_arg(args, int);
+			break;
 		case '4':
-			size += 4-2;
+			size += 4;
 			va_arg(args, int);
 			break;
 		case 's':
 			j = va_arg(args, int) & 0xFF;
+			va_arg(args, char *);
 			size += 1+j;
 			break;
 		case 'S':
 			j = va_arg(args, int) & 0xFFFF;
+			va_arg(args, char *);
 			size += 2+j;
 			break;
 	}
@@ -167,10 +174,10 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 			data += 4;
 			break;
 		case 's':
-			v = va_arg(args, char *);
-			j = strlen(v);
+			j = va_arg(args, int);
 			if(j > 0xFF) j = 0xFF;
 			
+			v = va_arg(args, char *);
 			*data++ = j;
 			memcpy(data, v, j);
 			data += j;
@@ -198,6 +205,50 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 	}
 	
 	return pkt;
+}
+
+int net_sum_size(u8 cmd, int is_server)
+{
+	char *fmt = (cmd >= 128
+		? NULL
+		: (is_server ? net_pktstr_c2s : net_pktstr_s2c)[cmd]
+	);
+	
+	if(fmt == NULL)
+	{
+		fprintf(stderr, "EDOOFUS: command %02X [sum] not defined for %s\n",
+			cmd, (is_server ? "C->S" : "S->C"));
+		return ((NET_MTU*4)<<8)|0;
+	}
+	
+	int i;
+	
+	int sum = 1; // include cmd byte
+	int flags = 0;
+	
+	for(i = 0; fmt[i] != '\0'; i++)
+	switch(fmt[i])
+	{
+		case '1':
+			sum += 1;
+			break;
+		case '2':
+			sum += 2;
+			break;
+		case '4':
+			sum += 4;
+			break;
+		case 's':
+			sum += 1;
+			flags |= 1;
+			break;
+		case 'S':
+			sum += 2;
+			flags |= 2;
+			break;
+	}
+	
+	return (sum<<8)|flags;
 }
 
 layer_t *net_layer_request(s32 x, s32 y, u8 position)
@@ -294,10 +345,9 @@ netplayer_t *net_player_new(u16 id, int sockfd, s32 x, s32 y, u8 col, u16 chr)
 	np->player.chr = chr;
 	np->pkt_in_head = NULL;
 	np->pkt_in_tail = NULL;
-	np->pkt_in_pos = 0;
 	np->pkt_out_head = NULL;
 	np->pkt_out_tail = NULL;
-	np->pkt_out_pos = 0;
+	np->pkt_buf_pos = 0;
 	
 	if(id >= server_player_top)
 		server_player_top = id+1;
@@ -683,10 +733,188 @@ void net_map_save()
 		map_save(&server_map);
 }
 
-void net_recv()
+void net_recv(netplayer_t *np)
 {
 	// Parse any received packets.
-	// TODO!
+	int is_server = (np != NULL);
+	
+	if(np == NULL)
+		np = &net_player;
+	
+	// Check: are these certain local connection types?
+	if(np->sockfd == FD_LOCAL_IMMEDIATE)
+		return;
+	if(np->sockfd == FD_LOCAL_PKTCOPY)
+		return;
+	
+	// receive data
+	if(np->sockfd >= 0)
+	for(;;)
+	{
+		int rcount = recv(np->sockfd, np->pkt_buf,
+			NET_MTU-np->pkt_buf_pos,
+			MSG_DONTWAIT);
+		
+		if(rcount == -1)
+		{
+			int err = errno;
+			if(err != EAGAIN)
+			{
+				perror("net_recv");
+				// TODO: disconnect gracefully!
+				break;
+			}
+			break;
+		} else if(rcount == 0) {
+			// TODO: disconnect gracefully!
+			break;
+		} else {
+			np->pkt_buf_pos += rcount;
+		}
+		
+		
+		// parse the data we have
+		while(np->pkt_buf_pos != 0)
+		{
+			int size = net_sum_size(np->pkt_buf[0], is_server);
+			int flags = size&0xFF;
+			size >>= 8;
+			
+			// check size first
+			if(np->pkt_buf_pos < size)
+				break;
+			
+			if(flags & 1)
+			{
+				size += np->pkt_buf[size-1];
+			} else if(flags & 2) {
+				size += *(u16 *)&np->pkt_buf[size-2];
+			}
+			
+			// check size again
+			// if excessive, drop the packet
+			if(size > NET_MTU)
+			{
+				fprintf(stderr, "ERROR: calculated packet size %i too large! DROPPED.\n"
+					,size);
+				np->pkt_buf_pos = 0;
+				break;
+			}
+			
+			if(np->pkt_buf_pos < size)
+				break;
+			
+			// create packet
+			netpacket_t *pkt = malloc(sizeof(netpacket_t)+size-1);
+			
+			if(pkt == NULL)
+			{
+				fprintf(stderr, "FATAL: COULD NOT ALLOCATE PACKET OF SIZE %i\n", size);
+				perror("net_recv");
+				abort();
+			}
+			
+			// Fill in the fields
+			pkt->length = size;
+			pkt->cmd = np->pkt_buf[0];
+			pkt->next = NULL;
+			
+			// copy data
+			memcpy(pkt->data, &np->pkt_buf[1], size-1);
+			
+			// add to list
+			if(np->pkt_in_tail == NULL)
+			{
+				np->pkt_in_tail = np->pkt_in_head = pkt;
+			} else {
+				np->pkt_in_tail->next = pkt;
+				np->pkt_in_tail = pkt;
+			}
+			
+			// copy memory back
+			memmove(np->pkt_buf, &np->pkt_buf[size], np->pkt_buf_pos-size);
+			np->pkt_buf_pos -= size;
+		}
+	}
+}
+
+void net_send(netplayer_t *np_to, netplayer_t *np_from, int is_server)
+{
+	netpacket_t *pkt, *npkt;
+	
+	// Assemble packets for the send queue.
+	if(np_to != NULL && np_from != NULL && np_to->sockfd == FD_LOCAL_PKTCOPY)
+	{
+		// PKTCOPY: Just copy the packets across.
+		for(pkt = np_from->pkt_out_head; pkt != NULL; pkt = npkt)
+		{
+			if(np_to->pkt_in_tail == NULL)
+			{
+				np_to->pkt_in_tail = np_to->pkt_in_head = pkt;
+			} else {
+				np_to->pkt_in_tail->next = pkt;
+				np_to->pkt_in_tail = pkt;
+			}
+			npkt = pkt->next;
+		}
+		
+		if(np_to->pkt_in_tail != NULL)
+			np_to->pkt_in_tail->next = NULL;
+		
+		np_from->pkt_out_head = np_from->pkt_out_tail = NULL;
+	} else {
+		// PKTPARSE: Actually buffer the packets.
+		u8 buf[NET_MTU];
+		
+		netplayer_t *np = np_from;
+		int sockfd = np->sockfd;
+		
+		int buf_pos = 0;
+		
+		for(pkt = np->pkt_out_head; np->pkt_out_head != NULL; pkt = npkt)
+		{
+			npkt = pkt->next;
+			
+			// Drop oversize packets automatically.
+			if(pkt->length > NET_MTU)
+			{
+				fprintf(stderr, "ERROR: oversize packet %i! DROPPED.\n", pkt->length);
+				free(pkt);
+				continue;
+			}
+			
+			// Stop if we've hit our MTU.
+			if(buf_pos + pkt->length > NET_MTU)
+				break;
+			
+			// Copy packet data.
+			buf[buf_pos] = pkt->cmd;
+			memcpy(&buf[buf_pos+1], pkt->data, pkt->length-1);
+			buf_pos += pkt->length;
+			
+			// Free packet.
+			free(pkt);
+			
+			// Change head and, if empty, tail.
+			np->pkt_out_head = npkt;
+			if(npkt == NULL)
+				np->pkt_out_tail = NULL;
+		}
+		
+		if(buf_pos != 0)
+		{
+			int amt = send(sockfd, buf, buf_pos, 0);
+			if(amt != buf_pos)
+			{
+				// TODO: deal with these cases correctly
+				if(amt == -1)
+					perror("net_send");
+				else
+					fprintf(stderr, "ERROR: expected %i bytes, sent %i!\n",
+						buf_pos, amt);
+			}
+		}
+	}
 }
 
 void net_update()
@@ -694,6 +922,10 @@ void net_update()
 	// Check: are we actually networked?
 	if(net_player.sockfd == FD_LOCAL_IMMEDIATE)
 		return;
+	
+	// Attempt to receive packets.
+	if(net_player.sockfd != FD_LOCAL_PKTCOPY)
+		net_recv(NULL);
 	
 	// Check: do we have any packets in the receive queue?
 	netpacket_t *pkt, *npkt;
@@ -709,10 +941,14 @@ void net_update()
 	
 	// If networked, sockfd will be >= 0.
 	// Check if local player has been accepted.
-	if(net_player.sockfd < -1 && server_players[net_player.id] == NULL)
+	if((server_sockfd == FD_LOCAL_SOCKETPAIR || net_player.sockfd < -1)
+		&& server_players[net_player.id] == NULL)
 	{
 		server_players[net_player.id] = net_player_new(
-			net_player.id, net_player.sockfd,
+			net_player.id, 
+			(server_sockfd == FD_LOCAL_SOCKETPAIR
+				? server_sockfd_socketpair
+				: net_player.sockfd),
 			player->x,
 			player->y,
 			player->col,
@@ -724,29 +960,7 @@ void net_update()
 		: NULL);
 	
 	// Assemble packets for the send queue.
-	if(net_player.sockfd == FD_LOCAL_PKTCOPY)
-	{
-		// PKTCOPY: Just copy the packets across.
-		for(pkt = net_player.pkt_out_head; pkt != NULL; pkt = npkt)
-		{
-			if(np->pkt_in_tail == NULL)
-			{
-				np->pkt_in_tail = np->pkt_in_head = pkt;
-			} else {
-				np->pkt_in_tail->next = pkt;
-				np->pkt_in_tail = pkt;
-			}
-			npkt = pkt->next;
-		}
-		
-		if(np->pkt_in_tail != NULL)
-			np->pkt_in_tail->next = NULL;
-		
-		net_player.pkt_out_head = net_player.pkt_out_tail = NULL;
-	} else {
-		// PKTPARSE: Actually buffer the packets.
-		// TODO!
-	}
+	net_send(np, &net_player, 0);
 }
 
 void server_update()
@@ -756,6 +970,7 @@ void server_update()
 	// Check: are we actually running a server?
 	if(server_sockfd == FD_LOCAL_IMMEDIATE)
 		return;
+	
 	
 	netpacket_t *pkt, *npkt;
 	
@@ -768,7 +983,13 @@ void server_update()
 		if(np == NULL)
 			continue;
 		
-		// TODO: parse actual netbuffer
+		// Skip unallocated sockets (TODO: clean these up)
+		if(np->sockfd == -1)
+			continue;
+		
+		// Attempt to receive packets.
+		if(np->sockfd >= 0)
+			net_recv(np);
 		
 		// Parse ALL the packets!
 		for(pkt = np->pkt_in_head; pkt != NULL; pkt = npkt)
@@ -781,29 +1002,7 @@ void server_update()
 		np->pkt_in_head = np->pkt_in_tail = NULL;
 		
 		// Assemble packets for the send queue.
-		if(np->sockfd == FD_LOCAL_PKTCOPY)
-		{
-			// PKTCOPY: Just copy the packets across.
-			for(pkt = np->pkt_out_head; pkt != NULL; pkt = npkt)
-			{
-				if(net_player.pkt_in_tail == NULL)
-				{
-					net_player.pkt_in_tail = net_player.pkt_in_head = pkt;
-				} else {
-					net_player.pkt_in_tail->next = pkt;
-					net_player.pkt_in_tail = pkt;
-				}
-				npkt = pkt->next;
-			}
-			
-			if(np->pkt_in_tail != NULL)
-				np->pkt_in_tail->next = NULL;
-			
-			np->pkt_out_head = np->pkt_out_tail = NULL;
-		} else {
-			// PKTPARSE: Actually buffer the packets.
-			// TODO!
-		}
+		net_send((np->sockfd >= -1 ? NULL : &net_player), np, 1);
 	}
 }
 
@@ -820,11 +1019,20 @@ int net_init()
 	net_player.pkt_in_tail = NULL;
 	net_player.pkt_out_head = NULL;
 	net_player.pkt_out_tail = NULL;
+	net_player.pkt_buf_pos = 0;
 	
 	// Prepare the server stuff
 	
 	// SINGLEPLAYER, TODO: MULTIPLAYER
-	net_player.sockfd = server_sockfd = FD_LOCAL_PKTCOPY;
+	{
+		int sv[2] = {FD_LOCAL_PKTCOPY, FD_LOCAL_PKTCOPY};
+		socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+		printf("%i %i\n", sv[0], sv[1]);
+		net_player.sockfd = sv[0];
+		server_sockfd_socketpair = sv[1];
+		server_sockfd = FD_LOCAL_SOCKETPAIR;
+	}
+	//net_player.sockfd = server_sockfd = FD_LOCAL_PKTCOPY;
 	//net_player.sockfd = server_sockfd = FD_LOCAL_IMMEDIATE;
 	
 	for(i = 0; i < 65536; i++)

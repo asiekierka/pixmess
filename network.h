@@ -22,9 +22,9 @@
 // PKTCOPY: copies the packet structures across.
 #define FD_LOCAL_PKTCOPY -2
 
-// PKTPARSE: actually buffer and parse packets.
+// SOCKETPAIR: actual one-computer networking.
 // hypothetically, the most accurate singleplayer mode.
-#define FD_LOCAL_PKTPARSE -3
+#define FD_LOCAL_SOCKETPAIR -3
 
 int net_init();
 

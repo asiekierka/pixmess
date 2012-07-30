@@ -118,6 +118,8 @@ void mouse_placement()
 
 int main(int argc, char *argv[])
 {
+	int i;
+	
 	if(sfp_init_render())
 		return 1;
 	
@@ -157,13 +159,19 @@ int main(int argc, char *argv[])
 		
 		sfp_render_end();
 		
-		// network!
-		net_update();
-		server_update();
-		
+		// constant ~30FPS, rule from old 64pixels
+		// TODO: get this to 33ms rather than 30ms
+		// -- SDL_Delay only goes up in 10ms increments --GM
 		// TODO: throttle it properly
-		// TODO: check for network stuff during this period
-		sfp_delay(33); // constant ~30FPS, rule from old 64pixels
+		for(i = 0; i < 3; i++)
+		{
+			// network!
+			net_update();
+			server_update();
+			
+			// sleepage
+			sfp_delay(10);
+		}
 		
 		sfp_event_poll();
 		sfp_event_tick();

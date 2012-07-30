@@ -52,7 +52,6 @@ struct netpacket
 };
 
 #define NET_MTU 1024
-#define NET_BUF_MAX 4096
 typedef struct netplayer
 {
 	u16 id;
@@ -60,8 +59,9 @@ typedef struct netplayer
 	player_t player;
 	netpacket_t *pkt_in_head, *pkt_in_tail;
 	netpacket_t *pkt_out_head, *pkt_out_tail;
-	int pkt_out_pos;
-	int pkt_in_pos;
+	
+	u8 pkt_buf[NET_MTU];
+	int pkt_buf_pos;
 } netplayer_t;
 
 typedef struct map
