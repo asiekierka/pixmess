@@ -44,8 +44,7 @@ s32 get_rooty()
 
 void display (player_t *p)
 {
-	s32 i;
-	s32 j;
+	int i, j;
 	s32 rx = p->x-(SFP_FIELD_WIDTH)/2;
 	s32 orx = rx;
 	s32 ry = p->y-(SFP_FIELD_HEIGHT)/2;

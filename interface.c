@@ -37,12 +37,12 @@ tile_t *ui_get_tile(void)
 	return drawing_tile;
 }
 
-s32 scrollbar_pos = 0;
-s32 scrollbar_pos_save[3];
-u8 scrollbar_dragged;
-u8 scrollbar_mouse_cooldown;
-u32 scrollbar_orig_y;
-s32 scrollbar_orig_pos;
+int scrollbar_pos = 0;
+int scrollbar_pos_save[3];
+int scrollbar_dragged;
+int scrollbar_mouse_cooldown;
+int scrollbar_orig_y;
+int scrollbar_orig_pos;
 
 u8 ui_can_mouse_button()
 {
@@ -54,19 +54,19 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max, int mouse_in_parent)
 	// Sanity checks
 	if(max==0 || h%8>0) return;
 	// Basic scrollbar
-	u16 i;
+	int i;
 	sfp_putc_1x(x,y,8,15,30);
 	for(i=8;i<h-8;i+=8)
 		sfp_putc_1x(x,y+i,0,8,177);
 	sfp_putc_1x(x,y+h-8,8,15,31);
 
 	// The light gray moving part.
-	u16 part_pos = scrollbar_pos*(h-32)/max;
+	int part_pos = scrollbar_pos*(h-32)/max;
 	sfp_fill_rect(x,y+8+part_pos,8,16,0xCCCCCC);
 
-	u16 mousex = sfp_event_mouse_x();
-	u16 mousey = sfp_event_mouse_y();
-	u8 lmb = sfp_event_mouse_button(0);
+	int mousex = sfp_event_mouse_x();
+	int mousey = sfp_event_mouse_y();
+	int lmb = sfp_event_mouse_button(0);
 
 	// Moving the scrollbar.
 	if(scrollbar_dragged == 0)
@@ -106,8 +106,8 @@ void render_scrollbar(u16 x, u16 y, u16 h, u16 max, int mouse_in_parent)
 
 void render_type_tooltip(u8 id)
 {
-	u16 mousex = sfp_event_mouse_x();
-	u16 mousey = sfp_event_mouse_y();
+	int mousex = sfp_event_mouse_x();
+	int mousey = sfp_event_mouse_y();
 
 	// Tooltip
 	sfp_fill_rect(mousex-1,mousey-10,strlen(tile_get_name(id))*8+2,10,0x000000);
@@ -117,14 +117,14 @@ void render_type_tooltip(u8 id)
 void render_type_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
-	u16 mousex = sfp_event_mouse_x();
-	u16 mousey = sfp_event_mouse_y();
+	int mousex = sfp_event_mouse_x();
+	int mousey = sfp_event_mouse_y();
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0x000000);
 	// Drawing
-	u8 i,j,tcol,mouse_in;
-	s16 mouse_in_id = -1;
-	u16 px,py;
+	int i,j,tcol,mouse_in;
+	int mouse_in_id = -1;
+	int px,py;
 	for(i=0;i<20;i++)
 	{
 		j = 1+i+(scrollbar_pos*4);	
@@ -152,13 +152,13 @@ void render_type_window(void)
 }
 void render_char_window(void)
 {
-	u8 lmb = sfp_event_mouse_button(0);
+	int lmb = sfp_event_mouse_button(0);
 
 	// 112x152, 4x6 icons + scroll
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0x000000);
 	// Drawing
-	u8 i,tcol,mouse_in;
-	u16 j,px,py;
+	int i,tcol,mouse_in;
+	int j,px,py;
 	tcol = drawing_tile->col;
 	for(i=0;i<24;i++)
 	{
@@ -179,13 +179,13 @@ void render_char_window(void)
 }
 void render_color_window(void)
 {
-	u8 lmb = sfp_event_mouse_button(0);
+	int lmb = sfp_event_mouse_button(0);
 	int mousex = sfp_event_mouse_x();
 	int mousey = sfp_event_mouse_y();
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0x000000);
 	// Drawing
-	u8 i;
+	int i;
 	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-32,0x0F,0,"Foreground");
 	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-60,0x0F,0,"Background");
 	u8 tfg = drawing_tile->col&15;
