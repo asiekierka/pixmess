@@ -10,6 +10,7 @@ remember to do it often, or everything will turn to crap!
 #include "common.h"
 #include "event.h"
 #include "interface.h"
+#include "lua.h"
 #include "map.h"
 #include "misc.h"
 #include "network.h"
@@ -124,6 +125,9 @@ int main(int argc, char *argv[])
 		return 1;
 	
 	if(net_init())
+		return 1;
+	
+	if(sfp_lua_init())
 		return 1;
 	
 	map_init();

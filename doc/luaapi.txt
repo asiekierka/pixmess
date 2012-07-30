@@ -1,0 +1,93 @@
+Lua API for pixmess
+by Ben "GreaseMonkey" Russell, 2012
+
+INCOMPLETE DRAFT (SO IT DOESN'T HAVE A NUMBER)
+
+IMPORTANT! Lua is not an acronym! It is the Portuguese word for moon!
+Stop spelling it in all caps! Your Worse Then Facebookers And There Grammer
+
+The Lua setup should follow a simple convention:
+
+Server:
+	$(MAP_NAME)/
+		client/
+			main.lua
+			*.lua
+		server/
+			main.lua
+			*.lua
+		common/
+			*.lua
+
+Client:
+	local/
+		main.lua
+		*.lua
+
+Execution follows this process:
+- Server server/main.lua is loaded in the server's sandbox.
+- Server client/main.lua is loaded in the client's game sandbox.
+- Client local/main.lua is loaded in the client's local sandbox.
+
+*
+* The main call you'll want is THIS.
+*
+
+load_module(modname) S/Cg/Cl
+	Loads and runs a Lua script from the appropriate directory
+	using the calling sandbox's environment.
+	
+	Conventions for modname:
+		Paths are case sensitive.
+		Path separators are always '/'.
+		The .lua suffix is dropped.
+	
+	So, if you had a file on a Windows-based server called:
+		"common\lavasurvival.lua"
+	you would use:
+		"common/lavasurvival"
+	as your module name
+	
+	Paths each sandbox can load from:
+		S: S:common/, S:server/
+		Cg: S:common/, S:client/
+		Cp: C:local/
+	
+	Returns:
+		true if the module loaded successfully.
+		
+		false if the module errored.
+		
+		nil if the module is not available.
+
+*
+* These two are useful for communicating between the two client sandboxes.
+*
+
+query_local(querystr, ...) Cg/Cl
+query_game(querystr, ...) Cg/Cl
+	Sends a query to the given client sandbox.
+	
+	DANGER: SENDING STUFF YOU DON'T ASSEMBLE FOR THE GIVEN SANDBOX IS JUST
+	ASKING FOR TROUBLE. IF YOU WOULD LIKE TO PROVIDE A FUNCTION, ADD
+	ANOTHER QUERY FOR IT.
+	
+	DANGER: UNLESS YOU HAVE A GOOD REASON, REFRAIN FROM SENDING QUERIES TO
+	YOUR OWN SANDBOX. THERE IS NO WAY TO TELL WHICH SANDBOX IS DOING THE
+	QUERYING (yet).
+
+*
+* Here's a bunch of hooks.
+*
+
+on_tick(fn()) S/Cg/Cl
+	Sets the function to be called every tick (30Hz).
+
+on_query(fn(querystr, ...)) Cg/Cl
+	Sets the function to be called on a cross-sandbox query.
+
+*
+* OK, now onto some interesting stuff.
+*
+
+TODO!
