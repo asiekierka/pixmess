@@ -146,6 +146,13 @@ void mouse_placement()
 	lasty = by;
 }
 
+int termbysig = 0;
+void sighdl_closenicely(int signum)
+{
+	printf("SIGNAL %i RECEIVED, TERMINATING NICELY\n", signum);
+	termbysig = 1;
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
@@ -206,9 +213,11 @@ int main(int argc, char *argv[])
 	
 	movement_wait = 0;
 	
+	signal(SIGINT, sighdl_closenicely);
+	
 	if(!no_self_player) net_login(0x1F, 0x0002, "Gamemaster");
 	
-	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
+	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC) || termbysig))
 	{
 		player = net_player.player;
 		
@@ -261,8 +270,11 @@ int main(int argc, char *argv[])
 		
 		sfp_event_tick();
 	}
+	printf("Cleaning up!\n");
 	
 	net_map_save();
+	
+	printf("DONE.\n");
 	
 	return 0;
 }
