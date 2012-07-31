@@ -152,11 +152,15 @@ int main(int argc, char *argv[])
 	
 	char *net_addr = NULL;
 	int net_port = 0;
+
+	int no_display = 0;
+	int no_self_player = 0;
 	
 	// Parse arguments
 	// Currently just doing it this way:
 	// - if none, PKTCOPY mode.
 	// - if one, that's a port and it's a multiplayer server/local client.
+	// - if two, "headless" and port, that's a headless multiplayer server.
 	// - if two, address and port, and it's a multiplayer client.
 	// - else, print use
 	switch(argc-1)
@@ -167,19 +171,28 @@ int main(int argc, char *argv[])
 			net_port = atoi(argv[1]);
 			break;
 		case 2:
-			net_addr = argv[1];
 			net_port = atoi(argv[2]);
+			if(strcmp(argv[1],"headless") != 0)
+			{
+				net_addr = argv[1];
+			}
+			else
+			{
+				no_display = 1;
+				no_self_player = 1;
+			}
 			break;
 		default:
 			printf("usage:\n");
 			printf("%s\n\t- PKTCOPY singleplayer mode\n\n", argv[0]);
 			printf("%s port\n\t- server\n\n", argv[0]);
 			printf("%s hostname port\n\t- client\n\n", argv[0]);
+			printf("%s headless port - headless server\n\n", argv[0]);
 			return 99;
 	}
 	
 	// Initialise stuff.
-	if(sfp_init_render())
+	if(!no_display && sfp_init_render())
 		return 1;
 	
 	if(net_init(net_addr, net_port))
@@ -193,39 +206,42 @@ int main(int argc, char *argv[])
 	
 	movement_wait = 0;
 	
-	net_login(0x1F, 0x0002, "Gamemaster");
+	if(!no_self_player) net_login(0x1F, 0x0002, "Gamemaster");
 	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
 	{
 		player = net_player.player;
 		
-		sfp_render_begin();
-		display(player);
-		//if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
-		if(player != NULL)
+		if(!no_display)
 		{
-			mouse_placement();
-			render_ui();
-
-			if(movement_wait==0)
+			sfp_render_begin();
+			display(player);
+			//if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+			if(player != NULL)
 			{
-				if(sfp_event_key(SFP_KEY_W))
-					player_move(0,-1);
-				if(sfp_event_key(SFP_KEY_S))
-					player_move(0,1);
-				if(sfp_event_key(SFP_KEY_A))
-					player_move(-1,0);
-				if(sfp_event_key(SFP_KEY_D))
-					player_move(1,0);
+				mouse_placement();
+				render_ui();
+	
+				if(movement_wait==0)
+				{
+					if(sfp_event_key(SFP_KEY_W))
+						player_move(0,-1);
+					if(sfp_event_key(SFP_KEY_S))
+						player_move(0,1);
+					if(sfp_event_key(SFP_KEY_A))
+						player_move(-1,0);
+					if(sfp_event_key(SFP_KEY_D))
+						player_move(1,0);
+				}
+				
+				if(movement_wait>0) movement_wait--;
 			}
 			
-			if(movement_wait>0) movement_wait--;
+			sfp_render_end();
 		}
-		
+			
 		frame_counter++;
-		
-		sfp_render_end();
-		
+
 		// constant ~30FPS, rule from old 64pixels
 		// TODO: get this to 33ms rather than 30ms
 		// -- SDL_Delay only goes up in 10ms increments --GM
