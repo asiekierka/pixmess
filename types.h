@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-#define LAYER_SIZE 64 /* 32-255, no promises for lower, will crash on higher */
+#define LAYER_SIZE_CLIENT 16
+#define LAYER_SIZE_SERVER 128
 
 typedef uint64_t u64;
 typedef uint32_t u32;
@@ -70,29 +71,24 @@ typedef struct netplayer
 
 typedef struct layerinfo
 {
-	layer_t *data;
-	u8 set;
+	u32 refcount;
 	s32 x,y;
-	
-	u8 *cmpbuf;
-	u32 cmplen;
-	u32 cmppos;
-	u32 rawlen;
+	layer_t *data;
 } layerinfo_t;
 
 typedef struct map
 {
 	char *fpath;
 	
-	layer_t *layers[LAYER_SIZE];
-	u8 layer_set[LAYER_SIZE];
-	s32 layer_x[LAYER_SIZE];
-	s32 layer_y[LAYER_SIZE];
+	u8 *layer_cmpbuf;
+	u32 layer_cmplen;
+	u32 layer_cmppos;
+	u32 layer_rawlen;
+	s32 layer_cmpx;
+	s32 layer_cmpy;
 	
-	u8 *layer_cmpbuf[LAYER_SIZE];
-	u32 layer_cmplen[LAYER_SIZE];
-	u32 layer_cmppos[LAYER_SIZE];
-	u32 layer_rawlen[LAYER_SIZE];
+	int layer_count;
+	layerinfo_t layers[];
 } map_t;
 
 enum

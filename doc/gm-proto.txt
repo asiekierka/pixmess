@@ -1,7 +1,7 @@
 Network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #05
+Draft #cannotbebotheredcountinganymore
 
 Layers:
 	See doc/layer.txt for format details.
@@ -52,12 +52,12 @@ $10 = entity_movement(u8 dir) C->S
 $11 = entity_creation(u16 id, s32 x, s32 y, s8 col, s16 ch, pstr8 name) S->C
 	Indicates the creation of a new entity.
 
-$40 = layer_request(s32 x, s32 y, u8 index) C->S
+$40 = layer_request(s32 x, s32 y) C->S
 	Requests a layer chunk from the server.
 
-$41 = layer_start(s32 x, s32 y, u8 index, u32 rawlen, u32 cmplen) S->C
-$42 = layer_data(u8 index, pstr16 data) S->C
-$43 = layer_end(u8 index) S->C
+$41 = layer_start(s32 x, s32 y, u32 rawlen, u32 cmplen) S->C
+$42 = layer_data(pstr16 data) S->C
+$43 = layer_end() S->C
 	Sends a GZipped layer chunk in pieces.
 	These three must appear in the correct fashion of $41 ($42)+ $43.
 	
@@ -67,7 +67,7 @@ $43 = layer_end(u8 index) S->C
 	Once the layer has been sent, the appropriate $11 "entity_creation"
 	messages need to be sent to the client.
 
-$44 = layer_release(s32 x, s32 y, u8 index) *->*
+$44 = layer_release(s32 x, s32 y) *->*
 	Indicates that the layer chunk is no longer being handled.
 	C->S: Tells the server to stop sending info about this chunk.
 	S->C: Tells the client it's stopped sending info about this chunk.

@@ -18,7 +18,7 @@ char *net_pktstr_c2s[128] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
-	"441", NULL, NULL, NULL, "441", NULL, NULL, NULL,
+	"44", NULL, NULL, NULL, "44", NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	"44", "2", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -44,7 +44,7 @@ char *net_pktstr_s2c[128] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
-	NULL, "44144", "1S", "1", "441", NULL, NULL, NULL,
+	NULL, "4444", "S", "", "44", NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	"244", "2", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -254,24 +254,18 @@ int net_sum_size(u8 cmd, int is_server)
 	return (sum<<8)|flags;
 }
 
-layer_t *net_layer_request(s32 x, s32 y, u8 position)
+layer_t *net_layer_request(s32 x, s32 y)
 {
-	printf("net_layer_request: %d,%d, pos %d\n",x,y,position);
+	printf("net_layer_request: %d,%d\n",x,y);
 	
 	if(net_player.sockfd == FD_LOCAL_IMMEDIATE)
 	{
 		// We are a server running on the localhosts.
-		layer_t* layer = layer_load(&client_map,x,y);
-		if(layer == NULL)
-		{
-			layer = layer_new(LAYER_WIDTH, LAYER_HEIGHT, LAYER_TEMPLATE_CLASSIC);
-			layer->x = x;
-			layer->y = y;
-		}
+		layer_t *layer = map_get_file_layer(client_map, x, y);
 		return layer;
 	} else {
 		net_pack(NULL, PKT_LAYER_REQUEST,
-			x, y, position);
+			x, y);
 	}
 	return NULL;
 }
@@ -299,14 +293,14 @@ int net_player_id()
 	}
 }
 
-void net_layer_release(s32 x, s32 y, u8 position)
+void net_layer_release(s32 x, s32 y)
 {
-	printf("net_layer_release: %d,%d, pos %d\n",x,y,position);
+	printf("net_layer_release: %d,%d\n",x,y);
 	
 	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
 	{
 		net_pack(NULL, PKT_LAYER_RELEASE,
-			x, y, position);
+			x, y);
 	}
 }
 
@@ -320,7 +314,7 @@ void net_block_set(s32 x, s32 y, tile_t tile)
 			x, y,
 			tile.type, tile.col, tile.chr);
 	} else {
-		map_set_tile(&client_map, x, y, tile);
+		map_set_tile(client_map, x, y, tile);
 	}
 }
 
@@ -334,7 +328,7 @@ void net_block_push(s32 x, s32 y, tile_t tile)
 			x, y,
 			tile.type, tile.col, tile.chr);
 	} else {
-		map_push_tile(&client_map, x, y, tile);
+		map_push_tile(client_map, x, y, tile);
 	}
 }
 
@@ -347,13 +341,13 @@ void net_block_pop(s32 x, s32 y)
 		net_pack(NULL, PKT_BLOCK_POP,
 			x, y);
 	} else {
-		map_pop_tile(&client_map, x, y);
+		map_pop_tile(client_map, x, y);
 	}
 }
 
 void net_entity_movement(s32 dx, s32 dy)
 {
-	printf("net_entity_movement: %d,%d\n", dx, dy);
+	//printf("net_entity_movement: %d,%d\n", dx, dy);
 	
 	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
 	{
@@ -546,7 +540,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			// DANGER: DON'T YOU DARE FEED THIS INTO CLIENT_SET_TILE
 			// IT WILL SEND THE SET MESSAGE STRAIGHT BACK TO THE SERVER!!!
 			//     --GM
-			map_set_tile(&client_map, x, y, t);
+			map_set_tile(client_map, x, y, t);
 		} break;
 		case PKT_BLOCK_PUSH: {
 			s32 x = *(s32 *)(&pkt->data[0]);
@@ -564,13 +558,13 @@ void net_handle_s2c(netpacket_t *pkt)
 			t.datalen = 0;
 			t.data = NULL;
 			
-			map_push_tile(&client_map, x, y, t);
+			map_push_tile(client_map, x, y, t);
 		} break;
 		case PKT_BLOCK_POP: {
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			
-			map_pop_tile(&client_map, x, y);
+			map_pop_tile(client_map, x, y);
 		} break;
 		
 		case PKT_ENTITY_MOVEMENT: {
@@ -620,13 +614,11 @@ void net_handle_s2c(netpacket_t *pkt)
 			break;
 		case PKT_LAYER_START: {
 			s32 x, y;
-			u8 pos;
 			x = *(s32 *)(&pkt->data[0]);
 			y = *(s32 *)(&pkt->data[4]);
-			pos = *(u8 *)(&pkt->data[8]);
-			int rawlen = (int)*(u32 *)(&pkt->data[9]);
-			int cmplen = (int)*(u32 *)(&pkt->data[13]);
-			printf("layer start %i,%i [%i]: %i -> %i\n", x,y,pos,rawlen,cmplen);
+			int rawlen = (int)*(u32 *)(&pkt->data[8]);
+			int cmplen = (int)*(u32 *)(&pkt->data[12]);
+			printf("layer start %i,%i: %i -> %i\n", x,y,rawlen,cmplen);
 			
 			// don't accept anything above 2MB compressed OR uncompressed
 			if(cmplen > 2*1024*1024 || rawlen > 2*1024*1024)
@@ -635,112 +627,116 @@ void net_handle_s2c(netpacket_t *pkt)
 				break;
 			}
 			
-			// nuke old layer if necessary
-			if(client_map.layers[pos] != NULL)
-			{
-				layer_free(client_map.layers[pos]);
-				client_map.layers[pos] = NULL;
-			}
-			
 			// nuke old buffer if necessary
-			if(client_map.layer_cmpbuf[pos] != NULL)
+			if(client_map->layer_cmpbuf != NULL)
 			{
-				free(client_map.layer_cmpbuf[pos]);
-				client_map.layer_cmpbuf[pos] = NULL;
+				free(client_map->layer_cmpbuf);
+				client_map->layer_cmpbuf = NULL;
 			}
 			
 			// set layer properly
-			client_map.layer_set[pos] = LAYER_LOADING;
-			client_map.layer_x[pos] = x;
-			client_map.layer_y[pos] = y;
+			client_map->layer_cmpx = x;
+			client_map->layer_cmpy = y;
 			
 			// allocate buffer
-			client_map.layer_cmpbuf[pos] = malloc(cmplen);
-			if(client_map.layer_cmpbuf[pos] == NULL)
+			client_map->layer_cmpbuf = malloc(cmplen);
+			if(client_map->layer_cmpbuf == NULL)
 			{
 				fprintf(stderr, "FATAL: COULD NOT ALLOCATE CMPBUF");
 				perror("net_handle_s2c");
 				abort();
 			}
-			client_map.layer_rawlen[pos] = rawlen;
-			client_map.layer_cmplen[pos] = cmplen;
-			client_map.layer_cmppos[pos] = 0;
+			client_map->layer_rawlen = rawlen;
+			client_map->layer_cmplen = cmplen;
+			client_map->layer_cmppos = 0;
 		} break;
 		case PKT_LAYER_DATA: {
-			u8 pos = *(u8 *)(&pkt->data[0]);
-			int slen = *(u16 *)(&pkt->data[1]);
-			u8 *inbuf = (u8 *)(&pkt->data[3]);
+			int slen = *(u16 *)(&pkt->data[0]);
+			u8 *inbuf = (u8 *)(&pkt->data[2]);
 			
-			printf("layer data %i: %i+%i -> %i\n", pos,
-				client_map.layer_cmppos[pos],
+			printf("layer data: %i+%i -> %i\n",
+				client_map->layer_cmppos,
 				slen,
-				client_map.layer_cmplen[pos]);
+				client_map->layer_cmplen);
 			
-			if(client_map.layer_cmpbuf[pos] == NULL)
+			if(client_map->layer_cmpbuf == NULL)
 			{
-				fprintf(stderr, "ERROR: Layer %i not allocated for data!\n"
-					,pos);
+				fprintf(stderr, "ERROR: Layer not allocated for data!\n");
 				break;
 			}
 			
-			if(client_map.layer_cmppos[pos]+slen
-					> client_map.layer_cmplen[pos])
+			if(client_map->layer_cmppos+slen
+					> client_map->layer_cmplen)
 			{
-				fprintf(stderr, "ERROR: Compression buffer overflow in layer %i!\n"
-					,pos);
-				free(client_map.layer_cmpbuf[pos]);
-				client_map.layer_cmpbuf[pos] = NULL;
+				fprintf(stderr, "ERROR: Compression buffer overflow in layer!\n");
+				free(client_map->layer_cmpbuf);
+				client_map->layer_cmpbuf = NULL;
 				break;
 			}
 			
 			if(slen > 0)
 			{
-				memcpy(&(client_map.layer_cmpbuf[pos][
-						client_map.layer_cmppos[pos]]),
+				memcpy(&(client_map->layer_cmpbuf[
+						client_map->layer_cmppos]),
 					inbuf, slen);
 			}
 			
-			client_map.layer_cmppos[pos] += slen;
+			client_map->layer_cmppos += slen;
 		} break;
 		case PKT_LAYER_END: {
-			u8 pos = *(u8 *)(&pkt->data[0]);
-			printf("layer end %i\n", pos);
+			printf("layer end\n");
 			
-			if(client_map.layer_cmpbuf[pos] == NULL)
+			if(client_map->layer_cmpbuf == NULL)
 			{
-				fprintf(stderr, "ERROR: Layer %i not allocated for data!\n"
-					,pos);
+				fprintf(stderr, "ERROR: Layer not allocated for data!\n");
 				break;
 			}
 			
-			if(client_map.layer_cmppos[pos] != client_map.layer_cmplen[pos])
+			if(client_map->layer_cmppos != client_map->layer_cmplen)
 			{
-				fprintf(stderr, "ERROR: Compression buffer size mismatch in layer %i!\n"
-					,pos);
-				free(client_map.layer_cmpbuf[pos]);
-				client_map.layer_cmpbuf[pos] = NULL;
+				fprintf(stderr, "ERROR: Compression buffer size mismatch in layer!\n");
+				free(client_map->layer_cmpbuf);
+				client_map->layer_cmpbuf = NULL;
 				break;
 			}
 			
-			layer_t *layer = layer_unserialise(client_map.layer_cmpbuf[pos],
-				client_map.layer_rawlen[pos],
-				client_map.layer_cmplen[pos]);
+			layer_t *layer = layer_unserialise(client_map->layer_cmpbuf,
+				client_map->layer_rawlen,
+				client_map->layer_cmplen);
 			
 			if(layer == NULL)
 			{
 				fprintf(stderr, "ERROR: Layer failed to decompress!\n");
-				free(client_map.layer_cmpbuf[pos]);
-				client_map.layer_cmpbuf[pos] = NULL;
+				free(client_map->layer_cmpbuf);
+				client_map->layer_cmpbuf = NULL;
 				break;
 			}
 			
-			layer->x = client_map.layer_x[pos];
-			layer->y = client_map.layer_y[pos];
-			client_map.layers[pos] = layer;
-			client_map.layer_set[pos] = LAYER_USED;
+			int pos = map_find_good_layer(client_map,
+				client_map->layer_cmpx,
+				client_map->layer_cmpy);
 			
-			free(client_map.layer_cmpbuf[pos]);
-			client_map.layer_cmpbuf[pos] = NULL;
+			if(pos == -1)
+			{
+				fprintf(stderr, "ERROR: too many layers allocated!\n");
+				fprintf(stderr, "TODO! DEAL TO THIS GRACEFULLY - currently CRASHING\n");
+				abort();
+			}
+			
+			// nuke old layer if necessary
+			if(client_map->layers[pos].data != NULL)
+			{
+				layer_free(client_map->layers[pos].data);
+				client_map->layers[pos].data = NULL;
+			}
+			
+			layer->x = client_map->layer_cmpx;
+			layer->y = client_map->layer_cmpy;
+			client_map->layers[pos].data = layer;
+			client_map->layers[pos].refcount = 1;
+			
+			free(client_map->layer_cmpbuf);
+			client_map->layer_cmpbuf = NULL;
 		} break;
 		case PKT_LAYER_RELEASE: {
 			// TODO: deal with this correctly
@@ -748,8 +744,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			u8 pos;
 			x = *(s32 *)(&pkt->data[0]);
 			y = *(s32 *)(&pkt->data[4]);
-			pos = *(u8 *)(&pkt->data[8]);
-			printf("layer release %i,%i [%i]\n", x,y,pos);
+			printf("layer release %i,%i\n", x,y);
 		} break;
 		
 		case PKT_ENTITY_POSITION: {
@@ -909,11 +904,11 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			
 			layer_t *layer;
 			
-			layer = map_get_existing_layer(&server_map, x, y);
+			layer = map_get_existing_layer(server_map, x, y);
 			if(layer == NULL)
-				layer = map_get_file_layer(&server_map, x, y);
+				layer = map_get_file_layer(server_map, x, y);
 			if(layer == NULL)
-				layer = map_get_new_layer(&server_map, x, y);
+				layer = map_get_new_layer(server_map, x, y);
 			if(layer == NULL)
 			{
 				fprintf(stderr, "EDOOFUS: could not load a new layer for the client\n");
@@ -935,12 +930,12 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			
 			// send data
 			net_pack(np, PKT_LAYER_START,
-				x, y, pos, rawlen, cmplen);
+				x, y, rawlen, cmplen);
 			
 			for(i = 0; i < cmplen; i += 512)
-				net_pack(np, PKT_LAYER_DATA, pos, (cmplen-i > 512 ? 512 : cmplen-i), &buffer[i]);
+				net_pack(np, PKT_LAYER_DATA, (cmplen-i > 512 ? 512 : cmplen-i), &buffer[i]);
 			
-			net_pack(np, PKT_LAYER_END, pos);
+			net_pack(np, PKT_LAYER_END);
 			printf("sent: %i -> %i\n", rawlen, cmplen);
 		} break;
 		case PKT_LAYER_START:
@@ -1057,9 +1052,9 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 void net_map_save()
 {
 	if(net_player.sockfd == FD_LOCAL_IMMEDIATE)
-		map_save(&client_map);
+		map_save(client_map);
 	else if(server_sockfd != FD_LOCAL_IMMEDIATE)
-		map_save(&server_map);
+		map_save(server_map);
 }
 
 void net_recv(netplayer_t *np)

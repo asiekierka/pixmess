@@ -70,7 +70,7 @@ void display(player_t *p)
 	s32 ry = p->y-(SFP_FIELD_HEIGHT)/2;
 	s32 ory = ry;
 	tile_t tile;
-	map_layer_set_used_rendered(&client_map, rx, ry);
+	map_layer_set_used_rendered(client_map, rx, ry);
 	for(j=0;j<SFP_FIELD_HEIGHT;j++)
 	{
 		for(i=0;i<SFP_FIELD_WIDTH;i++)
@@ -273,6 +273,9 @@ int main(int argc, char *argv[])
 	printf("Cleaning up!\n");
 	
 	net_map_save();
+	
+	// TODO: free stuff w/o having to rely on the OS!
+	// NOTABLE THINGS are maps, layers, players and netplayers.
 	
 	printf("DONE.\n");
 	

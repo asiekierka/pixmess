@@ -4,8 +4,8 @@
 
 // TODO these defintions should have a file later on, maybe
 
-map_t client_map;
-map_t server_map;
+map_t *client_map;
+map_t *server_map;
 
 void layer_free(layer_t *layer)
 {
@@ -350,39 +350,52 @@ void map_init(void)
 {
 	int i;
 	
-	for(i=0;i<LAYER_SIZE;i++)
+	// XXX: could refactor this to be some map_new() function --GM
+	client_map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*LAYER_SIZE_CLIENT);
+	server_map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*LAYER_SIZE_SERVER);
+	client_map->layer_count = LAYER_SIZE_CLIENT;
+	server_map->layer_count = LAYER_SIZE_SERVER;
+	
+	for(i=0;i<LAYER_SIZE_CLIENT; i++)
 	{
-		client_map.layer_set[i] = LAYER_UNALLOC;
-		server_map.layer_set[i] = LAYER_UNALLOC;
-		client_map.layers[i] = NULL;
-		server_map.layers[i] = NULL;
-		client_map.layer_cmpbuf[i] = NULL;
-		server_map.layer_cmpbuf[i] = NULL;
-		client_map.fpath = "xmap/";
-		server_map.fpath = "svmap/";
+		client_map->layers[i].refcount = 0;
+		client_map->layers[i].data = NULL;
 	}
+	
+	for(i=0;i<LAYER_SIZE_SERVER; i++)
+	{
+		server_map->layers[i].refcount = 0;
+		server_map->layers[i].data = NULL;
+	}
+	
+	client_map->fpath = "xmap/";
+	server_map->fpath = "svmap/";
+	client_map->layer_cmpbuf = NULL;
+	server_map->layer_cmpbuf = NULL;
 }
 
 void layer_unload(map_t *map, int i)
 {
-	map->layer_set[i] = LAYER_UNALLOC;
-	if(map->layers[i] == NULL)
+	map->layers[i].refcount = 0;
+	
+	if(map->layers[i].data == NULL)
 		return;
 	
-	net_layer_release(map->layers[i]->x,map->layers[i]->y,i);
-	layer_save(map, map->layers[i]);
-	layer_free(map->layers[i]);
+	net_layer_release(map->layers[i].data->x,map->layers[i].data->y);
+	layer_save(map, map->layers[i].data);
+	layer_free(map->layers[i].data);
+	map->layers[i].data = NULL;
 }
 
 int map_find_unused_layer(map_t *map)
 {
 	u16 i;
-	for(i=0;i<LAYER_SIZE;i++)
-		if(map->layer_set[i] == LAYER_UNALLOC)
+	for(i=0;i<map->layer_count;i++)
+		if(map->layers[i].data == NULL)
 			return i;
 
-	for(i=0;i<LAYER_SIZE;i++)
-		if(map->layer_set[i] == LAYER_UNUSED)
+	for(i=0;i<map->layer_count;i++)
+		if(map->layers[i].refcount == 0)
 		{
 			layer_unload(map, i);
 			return i;
@@ -391,22 +404,34 @@ int map_find_unused_layer(map_t *map)
 	return -1;
 }
 
+int map_find_good_layer(map_t *map, s32 x, s32 y)
+{
+	u16 i;
+	
+	for(i=0;i<map->layer_count;i++)
+		if(map->layers[i].x == x && map->layers[i].y == y)
+			return i;
+	
+	return map_find_unused_layer(map);
+}
+
 layer_t *map_get_new_layer(map_t *map, s32 x, s32 y)
 {
 	int i = map_find_unused_layer(map);
 	
 	if(i>=0)
 	{
-		map->layers[i] = layer_new(LAYER_WIDTH, LAYER_HEIGHT,
+		map->layers[i].data = layer_new(LAYER_WIDTH, LAYER_HEIGHT,
 			LAYER_TEMPLATE_CLASSIC);
 			
-		if(map->layers[i]!=NULL)
+		if(map->layers[i].data!=NULL)
 		{
-			map->layer_x[i] = x;
-			map->layer_y[i] = y;
-			map->layer_set[i] = LAYER_USED;
+			map->layers[i].x = x;
+			map->layers[i].y = y;
+			map->layers[i].refcount = 1;
+			
 		}
-		return map->layers[i];
+		return map->layers[i].data;
 	}
 	return NULL;
 }
@@ -415,9 +440,11 @@ layer_t *map_get_existing_layer(map_t *map, s32 x, s32 y)
 {
 	int i;
 	// Finding existing layer
-	for(i=0;i<LAYER_SIZE;i++) {
-		if(map->layer_set[i]==LAYER_USED && map->layers[i]->x==x && map->layers[i]->y==y)
-			return map->layers[i];
+	for(i=0;i<map->layer_count;i++) {
+		if(map->layers[i].data != NULL
+				&& map->layers[i].x==x
+				&& map->layers[i].y==y)
+			return map->layers[i].data;
 	}
 	return NULL;
 }
@@ -427,27 +454,43 @@ layer_t *map_get_net_layer(map_t *map, s32 x, s32 y)
 	int i;
 	
 	// Check if this layer is already requested
-	for(i=0;i<LAYER_SIZE;i++)
-		if(map->layer_set[i]==LAYER_REQUESTED)
-			if(map->layer_x[i] == x && map->layer_y[i] == y)
+	for(i=0;i<map->layer_count;i++)
+		if(map->layers[i].refcount != 0)
+			if(map->layers[i].x == x && map->layers[i].y == y)
 				return NULL;
 	
 	// Create empty layer
-	i = map_find_unused_layer(map);
-	map->layers[i] = net_layer_request(x,y,i);
-	map->layer_x[i] = x;
-	map->layer_y[i] = y;
+	i = map_find_good_layer(map, x, y);
+	if(i == -1)
+	{
+		fprintf(stderr,"ERROR: Could not find unused layer!\n");
+		fprintf(stderr,"TODO: handle this more gracefully!\n");
+		abort();
+	}
 	if(i>=0)
 	{
-		if(map->layers[i] == NULL)
+		// ensure we're not trying to grab a layer we have
+		if(map->layers[i].refcount != 0)
+			return NULL;
+		
+		map->layers[i].data = net_layer_request(x,y);
+		map->layers[i].x = x;
+		map->layers[i].y = y;
+		
+		if(map->layers[i].data == NULL)
 		{
-			map->layer_set[i] = LAYER_REQUESTED;
+			map->layers[i].refcount = 1;
 			return NULL;
 		} else {
-			if(map->layer_x[i] != x || map->layer_y[i] != y)
+			// i guess this is a safety check? --GM
+			if(map->layers[i].x != x || map->layers[i].y != y)
+			{
+				fprintf(stderr, "EDOOFUS: layer pos incorrect in map_get_net_layer!\n");
 				return NULL;
-			map->layer_set[i] = LAYER_USED;
-			return map->layers[i];
+			}
+			
+			map->layers[i].refcount = 1;
+			return map->layers[i].data;
 		}
 	}
 	return NULL;
@@ -459,25 +502,26 @@ layer_t *map_get_file_layer(map_t *map, s32 x, s32 y)
 
 	if(i>=0)
 	{
-		map->layers[i] = layer_load(map,x,y);
-		if(map->layers[i]!=NULL)
+		map->layers[i].data = layer_load(map,x,y);
+		if(map->layers[i].data != NULL)
 		{
-			map->layer_x[i] = x;
-			map->layer_y[i] = y;
-			map->layer_set[i] = LAYER_USED;
+			map->layers[i].x = x;
+			map->layers[i].y = y;
+			map->layers[i].refcount = 1;
 		}
-		return map->layers[i];
+		return map->layers[i].data;
 	}
 	return NULL;
 }
 
 void map_layer_set_unused(map_t *map, s32 x, s32 y)
 {
-	u8 i;
-	for(i=0;i<LAYER_SIZE;i++) {
-		if(map->layers[i] != NULL && map->layer_x[i]==x && map->layer_y[i]==y)
+	int i;
+	for(i=0;i<map->layer_count;i++) {
+		if(map->layers[i].data != NULL
+			&& map->layers[i].x==x && map->layers[i].y==y)
 		{
-			map->layer_set[i] = LAYER_UNUSED;
+			map->layers[i].refcount = 0;
 			return;
 		}
 	}
@@ -485,11 +529,12 @@ void map_layer_set_unused(map_t *map, s32 x, s32 y)
 
 void map_layer_set_used(map_t *map, s32 x, s32 y)
 {
-	u8 i;
-	for(i=0;i<LAYER_SIZE;i++) {
-		if(map->layers[i] != NULL && map->layer_x[i]==x && map->layer_y[i]==y)
+	int i;
+	for(i=0;i<map->layer_count;i++) {
+		if(map->layers[i].data != NULL
+			&& map->layers[i].x==x && map->layers[i].y==y)
 		{
-			map->layer_set[i] = LAYER_USED;
+			map->layers[i].refcount = 1;
 			return;
 		}
 	}
@@ -497,10 +542,10 @@ void map_layer_set_used(map_t *map, s32 x, s32 y)
 
 void map_layer_set_unused_all(map_t *map)
 {
-	u8 i;
-	for(i=0;i<LAYER_SIZE;i++) 
-		if(map->layers[i] != NULL)
-			map->layer_set[i] = LAYER_UNUSED;
+	int i;
+	for(i=0;i<map->layer_count;i++) 
+		if(map->layers[i].data != NULL)
+			map->layers[i].refcount = 0;
 }
 
 void map_layer_set_used_rendered(map_t *map, s32 topx, s32 topy)
@@ -516,7 +561,7 @@ void map_layer_set_used_rendered(map_t *map, s32 topx, s32 topy)
 
 tile_t *layer_get_tile_ref(u8 x, u8 y, layer_t *layer)
 {
-	return &(layer->tiles[y*LAYER_WIDTH+x]);
+	return &(layer->tiles[y*layer->w+x]);
 }
 
 tile_t layer_get_tile(u8 x, u8 y, layer_t *layer)

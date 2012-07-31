@@ -39,9 +39,9 @@ extern player_t *players[];
 int net_init();
 
 void net_login(u8 col, u16 chr, char *name);
-layer_t *net_layer_request(s32 x, s32 y, u8 position);
+layer_t *net_layer_request(s32 x, s32 y);
 int net_player_id();
-void net_layer_release(s32 x, s32 y, u8 position);
+void net_layer_release(s32 x, s32 y);
 void net_block_set(s32 x, s32 y, tile_t tile);
 void net_block_push(s32 x, s32 y, tile_t tile);
 void net_block_pop(s32 x, s32 y);

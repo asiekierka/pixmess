@@ -108,7 +108,7 @@ void map_save(map_t *map)
 {
 	int i;
 	
-	for(i = 0; i < LAYER_SIZE; i++)
-		if(map->layers[i] != NULL)
-			layer_save(map, map->layers[i]);
+	for(i = 0; i < map->layer_count; i++)
+		if(map->layers[i].data != NULL)
+			layer_save(map, map->layers[i].data);
 }

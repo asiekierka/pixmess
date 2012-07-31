@@ -22,6 +22,9 @@ layer_t *map_get_net_layer(map_t *map, s32 x, s32 y);
 layer_t *map_get_existing_layer(map_t *map, s32 x, s32 y);
 layer_t *map_get_file_layer(map_t *map, s32 x, s32 y);
 
+int map_find_unused_layer(map_t *map);
+int map_find_good_layer(map_t *map, s32 x, s32 y);
+
 void map_layer_set_unused(map_t *map, s32 x, s32 y);
 void map_layer_set_used(map_t *map, s32 x, s32 y);
 tile_t map_get_tile(map_t *map, s32 x, s32 y);
@@ -45,8 +48,8 @@ u8 layer_save(map_t *map, layer_t *layer);
 layer_t* layer_load(map_t *map, s32 x, s32 y);
 void map_save(map_t *map);
 
-extern map_t client_map;
-extern map_t server_map;
+extern map_t *client_map;
+extern map_t *server_map;
 
 enum
 {
