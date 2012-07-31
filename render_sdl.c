@@ -158,7 +158,7 @@ void sfp_render_render_end()
 // NOTE: THESE VERSIONS REQUIRE THE FOLLOWING CONDITIONS:
 // - the whole box must be in range.
 // - ... i think that's it.
-void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
+inline void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
 {
 	// calculate screen pointer
 	u32 *v = (uint32_t *)(screen->pixels + screen->pitch*y + 4*x);
@@ -185,7 +185,7 @@ void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
 	}
 }
 
-void sfp_render_putc_1x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
+inline void sfp_render_putc_1x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
 {
 	// calculate screen pointer
 	u32 *v = (u32 *)(screen->pixels + screen->pitch*y + 4*x);

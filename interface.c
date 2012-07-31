@@ -15,7 +15,7 @@ tile_t *drawing_tile;
 
 #define COLHL(el,al,sh) (((el)==(sh))||((al)==(sh))?8:0)
 
-u8 ui_is_occupied(u16 x, u16 y)
+inline u8 ui_is_occupied(u16 x, u16 y)
 {
 	if(y>=SFP_FIELD_HEIGHT*16) return 1;
 	switch(activeUI)

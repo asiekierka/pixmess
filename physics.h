@@ -5,4 +5,6 @@
 #include "map.h"
 #include "tile.h"
 
+void handle_physics(map_t *map);
+
 #endif /* _PHYSICS_H_ */
