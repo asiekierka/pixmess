@@ -18,7 +18,7 @@ inline u8 tile_stackable(u8 type, u8 utype)
 	return tile_stack_data[utype+(type*TILE_TYPES)];
 }
 
-inline u8 tile_active(tile_t tile)
+u8 tile_active(tile_t tile)
 {
 	switch(tile.type)
 	{
