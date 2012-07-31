@@ -219,7 +219,6 @@ int main(int argc, char *argv[])
 			//if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
 			if(player != NULL)
 			{
-				mouse_placement();
 				render_ui();
 	
 				if(movement_wait==0)
@@ -248,6 +247,10 @@ int main(int argc, char *argv[])
 		// TODO: throttle it properly
 		for(i = 0; i < 3; i++)
 		{
+			// placement
+			sfp_event_poll();
+			if(player!=NULL) mouse_placement();
+
 			// network!
 			net_update();
 			server_update();
@@ -256,7 +259,6 @@ int main(int argc, char *argv[])
 			sfp_delay(10);
 		}
 		
-		sfp_event_poll();
 		sfp_event_tick();
 	}
 	
