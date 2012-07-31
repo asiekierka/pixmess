@@ -1468,7 +1468,9 @@ int net_init(char *addr, int port)
 		}
 		
 		// client connect
-		struct hostent *he = gethostbyname("127.0.0.1");
+		struct hostent *he;
+		if(addr == NULL) he = gethostbyname("127.0.0.1");
+		else he = gethostbyname(addr);
 		if(he == NULL || he->h_addr_list[0] == NULL)
 		{
 			fprintf(stderr, "ERROR: gethostbyname failed!\n");
