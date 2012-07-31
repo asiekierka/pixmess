@@ -355,27 +355,34 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	u32 j;
 	u8 k;
 	u32 p;
-	for(i=0;i<layer->y;i++)
-		for(j=0;j<layer->x;j+=8)
+	for(i=0;i<layer->h;i++)
+	{
+		for(j=0;j<layer->w;j+=8)
 		{
 			if(layer->updmask[p]>0)
+			{
 				for(k=0;k<8;k++)
+				{
 					if(((layer->updmask[p])>>k)&1)
 					{
 						*ux=j+k; *uy=i;
 						layer->updmask[p] &= 0xFF ^ (1<<k);
 						return 1;
 					}
+				}
+			}
 			p++;
-		}
+		}	
+	}
+	return 0;
 };
 
 void layer_set_update(layer_t *layer, u32 ux, u32 uy)
 {
-	u32 i = layer->y * ((layer->x+7)/8);
-	u32 k = (layer->x%8);
-	layer->updmask[p] |= 1<<k;
-}
+	u32 i = ux * ((uy+7)/8);
+	u8 k = uy & 7;
+	layer->updmask[i] |= 1<<k;
+};
 
 map_t *map_new(u32 layercount)
 {
@@ -383,6 +390,8 @@ map_t *map_new(u32 layercount)
 	u32 j;
 
 	map_t *map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*layercount);
+	if(map == NULL) return NULL;
+
 	map->layer_count = layercount;
 
 	for(i=0;i<layercount; i++)
@@ -391,6 +400,7 @@ map_t *map_new(u32 layercount)
 		map->layers[i].data = NULL;
 	}
 	map->layer_cmpbuf = NULL;
+	return map;
 }
 
 void map_init(void)
@@ -696,4 +706,13 @@ void map_pop_tile(map_t *map, s32 x, s32 y)
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
 	layer_pop_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
+}
+
+void map_set_update(map_t *map, s32 x, s32 y)
+{
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
+	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
+	if(chunk == NULL) return;
+	layer_set_update(chunk, absmod(x,chunk->w),absmod(y,chunk->h));
 }
