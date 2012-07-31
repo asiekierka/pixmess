@@ -25,6 +25,7 @@ int map_find_good_layer(map_t *map, s32 x, s32 y);
 void map_layer_set_unused(map_t *map, s32 x, s32 y);
 void map_layer_set_used(map_t *map, s32 x, s32 y);
 tile_t map_get_tile(map_t *map, s32 x, s32 y);
+tile_t *map_get_tile_ref(map_t *map, s32 x, s32 y);
 void map_set_tile(map_t *map, s32 x, s32 y, tile_t tile);
 void map_push_tile(map_t *map, s32 x, s32 y, tile_t tile);
 void map_pop_tile(map_t *map, s32 x, s32 y);

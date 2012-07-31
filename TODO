@@ -1,5 +1,4 @@
 BLOCKING:
-- add map_get_tile_ref to map.c (needed by physics code, at least)
 
 IMPORTANT:
 

@@ -683,6 +683,15 @@ tile_t map_get_tile(map_t *map, s32 x, s32 y)
 	return layer_get_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
 }
 
+tile_t *map_get_tile_ref(map_t *map, s32 x, s32 y)
+{
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
+	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
+	if(chunk == NULL) return NULL;
+	return layer_get_tile_ref(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
+}
+
 void map_set_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
 	s32 chunk_x = divneg(x,LAYER_WIDTH);
