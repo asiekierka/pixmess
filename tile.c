@@ -18,7 +18,18 @@ inline u8 tile_stackable(u8 type, u8 utype)
 	return tile_stack_data[utype+(type*TILE_TYPES)];
 }
 
-inline u8 tile_active(tile_t tile) { return 0; }
+inline u8 tile_active(tile_t tile)
+{
+	switch(tile.type)
+	{
+		default:
+			return 0;
+		case TILE_WIRE:
+		case TILE_PNAND:
+		case TILE_CROSSER:
+			return 1;
+	}
+}
 
 u16* tile_get_allowed_chars(tile_t tile, u16* length)
 {
