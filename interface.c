@@ -191,8 +191,8 @@ void render_color_window(void)
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0x000000);
 	// Drawing
 	int i;
-	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-32,0x0F,0,"Foreground");
-	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-60,0x0F,0,"Background");
+	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-32,0x0F,0,"Background");
+	sfp_printf_1x(8,SFP_FIELD_HEIGHT*16-60,0x0F,0,"Foreground");
 	u8 tfg = drawing_tile->col&15;
 	u8 tbg = drawing_tile->col>>4;
 	for(i=0;i<16;i++)
@@ -204,14 +204,14 @@ void render_color_window(void)
 			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-20,12,12,0x555555);
 			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-48,12,12,0x555555);
 		}
-		if(i==tbg)
-			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0xCCCCCC);
 		if(i==tfg)
+			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0xCCCCCC);
+		if(i==tbg)
 			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12,0xCCCCCC);
 		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12) && lmb)
-			tbg = i;
-		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12) && lmb)
 			tfg = i;
+		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12) && lmb)
+			tbg = i;
 	}
 	drawing_tile->col = (tbg<<4)|tfg;
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0xCCCCCC);
