@@ -160,9 +160,14 @@ void render_char_window(void)
 	int i,tcol,mouse_in;
 	int j,px,py;
 	tcol = drawing_tile->col;
+	u16 ac_length;
+	u16* allowed_chars = tile_get_allowed_chars(*drawing_tile,&ac_length);
+	if(ac_length<(scrollbar_pos*4)) scrollbar_pos = 0;
 	for(i=0;i<24;i++)
 	{
-		j = i+(scrollbar_pos*4);	
+		if(i+(scrollbar_pos*4)>=ac_length) break;
+		if(allowed_chars != NULL) j = allowed_chars[i+(scrollbar_pos*4)];
+		else j = i+(scrollbar_pos*4);
 		if(j>255) break;
 		px = 8+((i%4)*24);
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-152);
@@ -173,7 +178,7 @@ void render_char_window(void)
 	}
 	
 	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-152,112,152);
-	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,(256/4)-4, mouse_in);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,((ac_length+3)/4)-4, mouse_in);
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0xCCCCCC);
 }

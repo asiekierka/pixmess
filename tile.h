@@ -6,6 +6,7 @@
 inline char* tile_get_name(u8 type);
 inline u16 tile_get_preview_char(u8 type);
 inline u8 tile_get_preview_color(u8 type);
+u16* tile_get_allowed_chars(tile_t tile, u16* length);
 
 inline tile_t tile_dummy(void);
 
@@ -19,7 +20,10 @@ enum
 	TILE_FLOOR,
 	TILE_WALL,
 	TILE_ROOF,
-	
+	TILE_WIRE,
+	TILE_PNAND,
+	TILE_CROSSER,
+
 	TILE_TYPES
 };
 
