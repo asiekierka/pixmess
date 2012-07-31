@@ -45,6 +45,10 @@ u8 layer_save(map_t *map, layer_t *layer);
 layer_t* layer_load(map_t *map, s32 x, s32 y);
 void map_save(map_t *map);
 
+u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy);
+void layer_set_update(layer_t *layer, u32 ux, u32 uy);
+void map_set_update(map_t *map, s32 x, s32 y);
+
 extern map_t *client_map;
 extern map_t *server_map;
 

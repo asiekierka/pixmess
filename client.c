@@ -36,3 +36,9 @@ void client_pop_tile(s32 x, s32 y)
 	//map_pop_tile(client_map, x,y);
 	net_block_pop(x, y);
 }
+
+void client_set_update(s32 x, s32 y)
+{
+	client_load_chunk(x,y);
+	map_set_update(client_map, x,y);
+}
