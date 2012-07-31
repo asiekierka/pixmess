@@ -37,6 +37,11 @@ void client_pop_tile(s32 x, s32 y)
 	net_block_pop(x, y);
 }
 
+u8 client_get_next_update(s32 *x, s32 *y)
+{
+	return map_get_next_update(client_map, x, y);
+}
+
 void client_set_update(s32 x, s32 y)
 {
 	client_load_chunk(x,y);

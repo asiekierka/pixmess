@@ -36,6 +36,11 @@ void server_pop_tile(s32 x, s32 y)
 	map_pop_tile(server_map,x,y);
 }
 
+u8 server_get_next_update(s32 *x, s32 *y)
+{
+	return map_get_next_update(server_map,x,y);
+}
+
 void server_set_update(s32 x, s32 y)
 {
 	server_load_chunk(x,y);

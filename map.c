@@ -708,6 +708,24 @@ void map_pop_tile(map_t *map, s32 x, s32 y)
 	layer_pop_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
 }
 
+u8 map_get_next_update(map_t *map, s32 *x, s32 *y)
+{
+	int i;
+	u32 lx, ly;
+
+	// Finding all existing layers
+	for(i=0;i<map->layer_count;i++) {
+		if(map->layers[i].data != NULL && layer_get_next_update(map->layers[i].data,&lx,&ly))
+		{
+			*x = map->layers[i].x*LAYER_WIDTH  + lx;
+			*y = map->layers[i].y*LAYER_HEIGHT + ly;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 void map_set_update(map_t *map, s32 x, s32 y)
 {
 	s32 chunk_x = divneg(x,LAYER_WIDTH);
