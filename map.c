@@ -355,6 +355,8 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	u32 j;
 	u8 k;
 	u32 p;
+
+	p = 0;
 	for(i=0;i<layer->h;i++)
 	{
 		for(j=0;j<layer->w;j+=8)
