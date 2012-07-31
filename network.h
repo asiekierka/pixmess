@@ -14,6 +14,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include <signal.h>
 #endif
 
 // IMMEDIATE: everything returns instantly, no server running.
@@ -28,13 +30,22 @@
 // hypothetically, the most accurate singleplayer mode.
 #define FD_LOCAL_SOCKETPAIR -3
 
+extern int net_id;
+extern netplayer_t net_player;
+extern int player_top;
+extern player_t *players[];
+
+#define SFP_PROTO_VERSION 0x0001
 int net_init();
 
+void net_login(u8 col, u16 chr, char *name);
 layer_t *net_layer_request(s32 x, s32 y, u8 position);
+int net_player_id();
 void net_layer_release(s32 x, s32 y, u8 position);
 void net_block_set(s32 x, s32 y, tile_t tile);
 void net_block_push(s32 x, s32 y, tile_t tile);
 void net_block_pop(s32 x, s32 y);
+void net_entity_movement(s32 dx, s32 dy);
 
 void net_map_save();
 

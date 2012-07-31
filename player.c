@@ -1,6 +1,8 @@
 #include "common.h"
 #include "player.h"
 
+// TODO refactor
+/*
 player_t *players[PLAYER_AMOUNT];
 u8 players_set[PLAYER_AMOUNT];
 
@@ -28,3 +30,4 @@ void player_remove(u16 id)
 		free(players[id]);
 	}
 }
+*/

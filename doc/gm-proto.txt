@@ -1,7 +1,7 @@
 Network protocol for pixmess
 by Ben "GreaseMonkey" Russell, 2012
 
-Draft #04
+Draft #05
 
 Layers:
 	See doc/layer.txt for format details.
@@ -49,7 +49,7 @@ $10 = entity_movement(u8 dir) C->S
 	where x and y are signed nybbles indicating direction,
 	and -8 does not mean anything yet - IT IS RESERVED.
 
-$11 = entity_creation(u16 id, s32 x, s32 y, s16 col, s16 ch, pstr8 name) S->C
+$11 = entity_creation(u16 id, s32 x, s32 y, s8 col, s16 ch, pstr8 name) S->C
 	Indicates the creation of a new entity.
 
 $40 = layer_request(s32 x, s32 y, u8 index) C->S
@@ -108,7 +108,7 @@ $58 = chat(pstr8 message) *->*
 	C->S: Send a chat message / command.
 	S->C: Adds the given string to the client's chatbox.
 
-$7B = login(u16 version, u16 chr, u16 col, pstr8 name) C->S
+$7B = login(u16 version, u8 col, u16 chr, pstr8 name) C->S
 	Attempt to get into the server.
 	
 	Server should respond with one of the following:

@@ -28,14 +28,14 @@ char *net_pktstr_c2s[128] = {
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, "222s", "1", "1", "", "s",
+	NULL, NULL, NULL, "212s", "1", "1", "", "s",
 };
 
 char *net_pktstr_s2c[128] = {
 	NULL, "44112", "44112", "44", NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
-	"211", "24422s", NULL, NULL, NULL, NULL, NULL, NULL,
+	"211", "24412s", NULL, NULL, NULL, NULL, NULL, NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -59,7 +59,10 @@ char *net_pktstr_s2c[128] = {
 
 // client stuff
 int net_initialised = 0;
+int net_id = PLAYER_NONE;
 netplayer_t net_player;
+player_t *players[65536];
+int player_top = 0;
 
 // server stuff
 int server_sockfd = -1;
@@ -273,6 +276,29 @@ layer_t *net_layer_request(s32 x, s32 y, u8 position)
 	return NULL;
 }
 
+void net_login(u8 col, u16 chr, char *name)
+{
+	printf("net_login: chr=%04X, col=%02X, name=\"%s\"\n", chr, col, name);
+	
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		net_pack(NULL, PKT_LOGIN, SFP_PROTO_VERSION, col, chr, strlen(name), name);
+	} else {
+		// TODO: FD_LOCAL_IMMEDIATE mode
+	}
+}
+
+int net_player_id()
+{
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		net_pack(NULL, PKT_PLAYER_ID);
+		return -1;
+	} else {
+		return PLAYER_SELF;
+	}
+}
+
 void net_layer_release(s32 x, s32 y, u8 position)
 {
 	printf("net_layer_release: %d,%d, pos %d\n",x,y,position);
@@ -325,7 +351,25 @@ void net_block_pop(s32 x, s32 y)
 	}
 }
 
-netplayer_t *net_player_new(u16 id, int sockfd, s32 x, s32 y, u8 col, u16 chr)
+void net_entity_movement(s32 dx, s32 dy)
+{
+	printf("net_entity_movement: %d,%d\n", dx, dy);
+	
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		u8 dir;
+		if (dx < -7 || dx > 7 || dy < -7 || dy > 7)
+		{
+			net_pack(NULL, PKT_ENTITY_POSITION,
+				net_player.player->x, net_player.player->y);
+		} else {
+			dir = (dx&15)|(dy<<4);
+			net_pack(NULL, PKT_ENTITY_MOVEMENT, dir);
+		}
+	}
+}
+
+netplayer_t *net_player_new(int sockfd)
 {
 	netplayer_t *np = malloc(sizeof(netplayer_t));
 	
@@ -336,26 +380,32 @@ netplayer_t *net_player_new(u16 id, int sockfd, s32 x, s32 y, u8 col, u16 chr)
 		abort();
 	}
 	
-	np->id = id;
+	np->player = malloc(sizeof(player_t));
+	
+	if(np->player == NULL)
+	{
+		fprintf(stderr, "FATAL: COULD NOT ALLOCATE NETPLAYER PLAYER\n");
+		perror("net_player_new");
+		abort();
+	}
+	
 	np->sockfd = sockfd;
-	np->player.x = x;
-	np->player.y = y;
-	np->player.id = id;
-	np->player.col = col;
-	np->player.chr = chr;
+	np->player->x = 0;
+	np->player->y = 0;
+	np->player->col = 0x00;
+	np->player->chr = 0x0000;
+	np->player->name = NULL;
+	np->flags = 0;
 	np->pkt_in_head = NULL;
 	np->pkt_in_tail = NULL;
 	np->pkt_out_head = NULL;
 	np->pkt_out_tail = NULL;
 	np->pkt_buf_pos = 0;
 	
-	if(id >= server_player_top)
-		server_player_top = id+1;
-	
 	return np;
 }
 
-netplayer_t *net_player_allocnew(int sockfd, s32 x, s32 y, u8 col, u16 chr)
+netplayer_t *net_player_allocnew_server(int sockfd)
 {
 	int i;
 	
@@ -364,13 +414,43 @@ netplayer_t *net_player_allocnew(int sockfd, s32 x, s32 y, u8 col, u16 chr)
 	{
 		if(server_players[i] == NULL)
 		{
-			server_players[i] = net_player_new((u16)i, sockfd, x, y, col, chr);
+			server_players[i] = net_player_new(sockfd);
+			
+			if(server_players[i] != NULL && i >= server_player_top)
+				server_player_top = i+1;
+			
 			return server_players[i];
 		}
 	}
 	
 	printf("Uh oh, out of player slots!\n");
 	return NULL;
+}
+
+player_t *net_player_allocnew_client(int id)
+{
+	// TODO: set some "max players" variable
+	if(players[id] == NULL)
+	{
+		players[id] = malloc(sizeof(player_t));
+		if(players[id] == NULL)
+		{
+			fprintf(stderr, "FATAL: COULD NOT ALLOCATE PLAYER\n");
+			perror("net_player_allocnew_client");
+			abort();
+		}
+		
+		players[id]->x = 0;
+		players[id]->y = 0;
+		players[id]->chr = 0;
+		players[id]->col = 0;
+		players[id]->name = NULL;
+		
+		if(players[id] != NULL && id >= player_top)
+			player_top = id+1;
+	}
+	
+	return players[id];
 }
 
 void net_handle_s2c(netpacket_t *pkt)
@@ -427,10 +507,48 @@ void net_handle_s2c(netpacket_t *pkt)
 			map_pop_tile(&client_map, x, y);
 		} break;
 		
-		case PKT_ENTITY_MOVEMENT:
-			break;
-		case PKT_ENTITY_CREATION:
-			break;
+		case PKT_ENTITY_MOVEMENT: {
+			int id = *(u16 *)&pkt->data[0];
+			int dx = *(s8 *)&pkt->data[2];
+			int dy = *(s8 *)&pkt->data[3];
+			
+			player_t *p = players[id];
+			if(p == NULL)
+			{
+				printf("position: entity %i does not exist!\n", id);
+				break;
+			}
+			
+			p->x += dx;
+			p->y += dy;
+		} break;
+		case PKT_ENTITY_CREATION: {
+			u16 id = *(u16 *)(&pkt->data[0]);
+			
+			player_t *p = net_player_allocnew_client(id);
+			
+			p->x = *(s32 *)(&pkt->data[2]);
+			p->y = *(s32 *)(&pkt->data[6]);
+			p->col = *(u16 *)(&pkt->data[10]);
+			p->chr = *(u16 *)(&pkt->data[11]);
+			int namelen = pkt->data[13];
+			if(p->name != NULL)
+				free(p->name);
+			p->name = malloc(namelen+1);
+			if(p->name == NULL)
+			{
+				fprintf(stderr, "FATAL: COULD NOT ALLOCATE NAME\n");
+				perror("net_handle_s2c");
+				abort();
+			}
+			p->name[namelen] = '\x00';
+			memcpy(p->name, &pkt->data[14], namelen);
+			
+			printf("%04X %02X \"%s\"\n",p->chr,p->col,p->name);
+			
+			if(id == net_id)
+				net_player.player = p;
+		} break;
 		
 		case PKT_LAYER_REQUEST:
 			break;
@@ -568,8 +686,17 @@ void net_handle_s2c(netpacket_t *pkt)
 			printf("layer release %i,%i [%i]\n", x,y,pos);
 		} break;
 		
-		case PKT_ENTITY_POSITION:
-			break;
+		case PKT_ENTITY_POSITION: {
+			u16 id = *(u16 *)(&pkt->data[0]);
+			player_t *p = players[id];
+			if(p == NULL)
+			{
+				printf("position: entity %i does not exist!\n", id);
+				break;
+			}
+			p->x = *(s32 *)(&pkt->data[2]);
+			p->y = *(s32 *)(&pkt->data[6]);
+		} break;
 		case PKT_ENTITY_DESTRUCTION:
 			break;
 		
@@ -578,26 +705,34 @@ void net_handle_s2c(netpacket_t *pkt)
 		
 		case PKT_LOGIN:
 			break;
-		case PKT_PING:
-			break;
+		case PKT_PING: {
+			net_pack(NULL, PKT_PONG, pkt->data[0]);
+		} break;
 		case PKT_PONG:
 			break;
-		case PKT_PLAYER_ID:
-			break;
+		case PKT_PLAYER_ID: {
+			net_id = *(u16 *)&pkt->data[0];
+			net_player.flags |= NPF_LOGGEDIN;
+			net_player.player = players[net_id];
+		} break;
 		case PKT_KICK:
 			break;
 	}
 }
 
-void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
+
+void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 {
+#define C2S_NEED_LOGIN if(!(np->flags & NPF_LOGGEDIN)) break;
+#define C2S_NEED_NOLOGIN if(np->flags & NPF_LOGGEDIN) break;
 	int i;
 	
-	printf("SERVER: %04X: packet %02X\n", np->id, pkt->cmd);
+	printf("SERVER: %04X: packet %02X\n", id, pkt->cmd);
 	
 	switch(pkt->cmd)
 	{
 		case PKT_BLOCK_SET: {
+			C2S_NEED_LOGIN;
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
@@ -620,6 +755,7 @@ void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
 						x, y, t.type, t.col, t.chr);
 		} break;
 		case PKT_BLOCK_PUSH: {
+			C2S_NEED_LOGIN;
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
@@ -642,6 +778,7 @@ void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
 						x, y, t.type, t.col, t.chr);
 		} break;
 		case PKT_BLOCK_POP: {
+			C2S_NEED_LOGIN;
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			
@@ -654,11 +791,30 @@ void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
 		} break;
 		
 		case PKT_ENTITY_MOVEMENT:
+			C2S_NEED_LOGIN;
+			
+			u8 dir = pkt->data[0];
+			int x = (dir&15);
+			int y = (dir>>4);
+			
+			if(x >= 8) x -= 16;
+			if(y >= 8) y -= 16;
+			
+			np->player->x += x;
+			np->player->y += y;
+			
+			for(i = 0; i < server_player_top; i++)
+				if(i != id && server_players[i] != NULL)
+					net_pack(server_players[i], PKT_ENTITY_MOVEMENT,
+						id, x, y);
+			
 			break;
 		case PKT_ENTITY_CREATION:
 			break;
 		
 		case PKT_LAYER_REQUEST: {
+			C2S_NEED_LOGIN;
+			
 			s32 x, y;
 			u8 pos;
 			x = *(s32 *)(&pkt->data[0]);
@@ -713,6 +869,8 @@ void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
 		case PKT_LAYER_END:
 			break;
 		case PKT_LAYER_RELEASE: {
+			C2S_NEED_LOGIN;
+			
 			// TODO: deal with this correctly
 			s32 x, y;
 			u8 pos;
@@ -730,14 +888,81 @@ void net_handle_c2s(netplayer_t *np, netpacket_t *pkt)
 		case PKT_CHAT:
 			break;
 		
-		case PKT_LOGIN:
-			break;
-		case PKT_PING:
-			break;
-		case PKT_PONG:
-			break;
-		case PKT_PLAYER_ID:
-			break;
+		case PKT_LOGIN: {
+			C2S_NEED_NOLOGIN;
+			
+			// TODO: set stuff properly
+			int version = *(u16 *)&pkt->data[0];
+			printf("Login: version %i\n", version);
+			
+			if(version != SFP_PROTO_VERSION)
+			{
+				printf("VERSION MISMATCH!\n");
+				const char *msg = "Version mismatch!";
+				net_pack(np, PKT_KICK, strlen(msg), msg);
+				break;
+			}
+			np->player->x = 0;
+			np->player->y = 0;
+			np->player->col = pkt->data[2];
+			np->player->chr = *(u16 *)&pkt->data[3];
+			int namelen = pkt->data[5];
+			np->player->name = malloc(namelen+1);
+			np->player->name[namelen] = '\x00';
+			memcpy(np->player->name, &pkt->data[6], namelen);
+			if(np->player->name == NULL)
+			{
+				fprintf(stderr, "FATAL: COULD NOT ALLOCATE PLAYER NAME\n");
+				perror("net_handle_c2s");
+				abort();
+			}
+			np->flags |= NPF_LOGGEDIN;
+			
+			net_pack(np, PKT_ENTITY_CREATION,
+				id,
+				np->player->x, np->player->y,
+				np->player->col, np->player->chr,
+				strlen(np->player->name), np->player->name);
+			
+			// exchange player spawn info
+			for(i = 0; i < server_player_top; i++)
+			{
+				// don't send this to yourself!
+				if(i == id)
+					continue;
+				
+				netplayer_t *xnp = server_players[i];
+				if(xnp == NULL)
+					continue;
+				
+				printf("exch %i %i\n", id, i);
+				// you to them
+				net_pack(xnp, PKT_ENTITY_CREATION,
+					id,
+					np->player->x, np->player->y,
+					np->player->col, np->player->chr,
+					strlen(np->player->name), np->player->name);
+				
+				// them to you
+				net_pack(np, PKT_ENTITY_CREATION,
+					i,
+					xnp->player->x, xnp->player->y,
+					xnp->player->col, xnp->player->chr,
+					strlen(xnp->player->name), xnp->player->name);
+			}
+			net_pack(np, PKT_PLAYER_ID, id);
+		} break;
+		case PKT_PING: {
+			net_pack(np, PKT_PONG, pkt->data[0]);
+		} break;
+		case PKT_PONG: {
+			
+		} break;
+		case PKT_PLAYER_ID: {
+			C2S_NEED_LOGIN;
+			
+			net_pack(np, PKT_PLAYER_ID, id);
+		} break;
 		case PKT_KICK:
 			break;
 	}
@@ -960,21 +1185,17 @@ void net_update()
 	// If networked, sockfd will be >= 0.
 	// Check if local player has been accepted.
 	if((server_sockfd == FD_LOCAL_SOCKETPAIR || net_player.sockfd < -1)
-		&& server_players[net_player.id] == NULL)
+		&& net_id == PLAYER_NONE)
 	{
-		server_players[net_player.id] = net_player_new(
-			net_player.id, 
+		net_id = 0;
+		server_players[net_id] = net_player_allocnew_server(
 			(server_sockfd == FD_LOCAL_SOCKETPAIR
 				? server_sockfd_socketpair
-				: net_player.sockfd),
-			player->x,
-			player->y,
-			player->col,
-			player->chr);
+				: net_player.sockfd));
 	}
 	
 	netplayer_t *np = (net_player.sockfd < -1
-		? server_players[net_player.id]
+		? server_players[net_id]
 		: NULL);
 	
 	// Assemble packets for the send queue.
@@ -1016,7 +1237,7 @@ void server_update()
 					sa.sin_addr.s_addr, sa.sin_port);
 				// TODO: give a decent spawn location!
 				// TODO: actually save this for login!
-				netplayer_t *npx = net_player_allocnew(csockfd, 0, 0, 0x1F, 0x02);
+				netplayer_t *npx = net_player_allocnew_server(csockfd);
 			}
 		}
 	}
@@ -1044,7 +1265,7 @@ void server_update()
 		for(pkt = np->pkt_in_head; pkt != NULL; pkt = npkt)
 		{
 			// Handle + free packet.
-			net_handle_c2s(np, pkt);
+			net_handle_c2s(i, np, pkt);
 			npkt = pkt->next;
 			free(pkt);
 		}
@@ -1063,7 +1284,9 @@ int net_init(char *addr, int port)
 		return 0;
 	
 	// Prepare the client stuff
-	net_player.id = PLAYER_SELF;
+	net_id = PLAYER_NONE;
+	net_player.flags = 0;
+	net_player.player = NULL;
 	net_player.pkt_in_head = NULL;
 	net_player.pkt_in_tail = NULL;
 	net_player.pkt_out_head = NULL;
@@ -1187,6 +1410,9 @@ int net_init(char *addr, int port)
 		}
 	}
 	
+	// STOP IT FROM KILLING THE PROGRAM ON A BROKEN PIPE.
+	// Broken pipes happen! LOTS!
+	signal(SIGPIPE, SIG_IGN);
 	
 	for(i = 0; i < 65536; i++)
 		server_players[i] = NULL;

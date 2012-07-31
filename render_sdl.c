@@ -146,6 +146,7 @@ int sfp_render_init_video()
 void sfp_render_render_begin()
 {
 	SDL_LockSurface(screen);
+	memset(screen->pixels, 0, screen->h*screen->pitch);
 }
 
 void sfp_render_render_end()

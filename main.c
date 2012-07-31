@@ -18,7 +18,8 @@ remember to do it often, or everything will turn to crap!
 #include "render.h"
 #include "tile.h"
 
-player_t *player;
+player_t *player = NULL;
+
 u8 movement_wait;
 u64 frame_counter;
 
@@ -26,11 +27,22 @@ void player_move(s8 dx, s8 dy)
 {
 	s32 newx = player->x+dx;
 	s32 newy = player->y+dy;
+	
+	int ldx = -player->x;
+	int ldy = -player->y;
+	
 	if(tile_walkable(client_get_tile(newx,newy)))
 	{
 		player->x=newx;
 		player->y=newy;
 	}
+	
+	ldx += player->x;
+	ldy += player->y;
+	
+	if(ldx != 0 || ldy != 0)
+		net_entity_movement(ldx, ldy);
+	
 	movement_wait = 2;
 }
 
@@ -43,8 +55,15 @@ s32 get_rooty()
 	return player->y-(SFP_FIELD_HEIGHT/2);
 }
 
-void display (player_t *p)
+void display(player_t *p)
 {
+	if(p == NULL)
+	{
+		sfp_printf_2x((SFP_SCREEN_REAL_WIDTH)/2-8*10,(SFP_SCREEN_REAL_HEIGHT)/2-8,
+			0x08, 0, "Loading...");
+		return;
+	}
+	
 	int i, j;
 	s32 rx = p->x-(SFP_FIELD_WIDTH)/2;
 	s32 orx = rx;
@@ -63,15 +82,25 @@ void display (player_t *p)
 		rx = orx;
 		ry++;
 	}
-	// Early player code.
-	u32 px = p->x-orx;
-	u32 py = p->y-ory;
-	if(!tile_overlay(client_get_tile(p->x,p->y))) sfp_putc_block_2x(px,py,(p->col>>4),(p->col&15),p->chr);
-	char* name = "Gamemaster";
-
-	u32 pnamex = (px*16)-((strlen(name))*4)+8;
-	u32 pnamey = (py*16)-10;
-	sfp_printf_1x(pnamex,pnamey,0x0F,0,"%s",name);
+	
+	// Some better player code.
+	for(i = 0; i < player_top; i++)
+	{
+		player_t *xp = players[i];
+		if(xp == NULL)
+			continue;
+		
+		u32 px = xp->x-orx;
+		u32 py = xp->y-ory;
+		char* name = xp->name;
+		if(!tile_overlay(client_get_tile(xp->x,xp->y)))
+			sfp_putc_block_2x(px,py,(xp->col>>4),(xp->col&15),xp->chr);
+		
+		u32 pnamex = (px*16)-((strlen(name))*4)+8;
+		u32 pnamey = (py*16)-10;
+		sfp_printf_1x(pnamex,pnamey,0x0F,0,"%s",name);
+	}
+	
 }
 
 void mouse_placement()
@@ -164,30 +193,35 @@ int main(int argc, char *argv[])
 	
 	movement_wait = 0;
 	
-	player = player_get(PLAYER_SELF);
+	net_login(0x1F, 0x0002, "Gamemaster");
 	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC)))
 	{
+		player = net_player.player;
+		
 		sfp_render_begin();
 		display(player);
-		if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
-		mouse_placement();
-		render_ui();
-
-		if(movement_wait==0)
+		//if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
+		if(player != NULL)
 		{
-			if(sfp_event_key(SFP_KEY_W))
-				player_move(0,-1);
-			if(sfp_event_key(SFP_KEY_S))
-				player_move(0,1);
-			if(sfp_event_key(SFP_KEY_A))
-				player_move(-1,0);
-			if(sfp_event_key(SFP_KEY_D))
-				player_move(1,0);
+			mouse_placement();
+			render_ui();
+
+			if(movement_wait==0)
+			{
+				if(sfp_event_key(SFP_KEY_W))
+					player_move(0,-1);
+				if(sfp_event_key(SFP_KEY_S))
+					player_move(0,1);
+				if(sfp_event_key(SFP_KEY_A))
+					player_move(-1,0);
+				if(sfp_event_key(SFP_KEY_D))
+					player_move(1,0);
+			}
+			
+			if(movement_wait>0) movement_wait--;
 		}
 		
-		
-		if(movement_wait>0) movement_wait--;
 		frame_counter++;
 		
 		sfp_render_end();

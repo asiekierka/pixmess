@@ -18,9 +18,9 @@ typedef int8_t s8;
 typedef struct player
 {
 	s32 x,y;
-	u16 id;
 	u8 col;
 	u16 chr;
+	char *name;
 } player_t;
 
 typedef struct tile tile_t;
@@ -54,12 +54,11 @@ struct netpacket
 #define NET_MTU 1024
 
 #define NPF_LOGGEDIN 0x00000001
-#define NPF_ACTIVE 0x00000001
+#define NPF_NPC      0x00000002
 typedef struct netplayer
 {
-	u16 id;
 	int sockfd;
-	player_t player;
+	player_t *player;
 	u32 flags;
 	netpacket_t *pkt_in_head, *pkt_in_tail;
 	netpacket_t *pkt_out_head, *pkt_out_tail;
