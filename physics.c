@@ -2,6 +2,10 @@
 #include "physics.h"
 #include "types.h"
 
+tile_t* handle_physics_tile(tile_t *origTile, s32 x, s32 y, map_t *map)
+{
+	return NULL;
+}
 
 void handle_physics(map_t *map, void (*setBlockFunc)(map_t *, s32, s32, tile_t *, u32))
 {
@@ -29,9 +33,4 @@ void handle_physics(map_t *map, void (*setBlockFunc)(map_t *, s32, s32, tile_t *
 			(*setBlockFunc)(map,x,y,tile,underCounter);
 		}
 	}
-}
-
-tile_t* handle_physics_tile(tile_t *origTile, s32 x, s32 y, map_t *map)
-{
-	return NULL;
 }

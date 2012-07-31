@@ -5,6 +5,6 @@
 #include "map.h"
 #include "tile.h"
 
-void handle_physics(map_t *map, void (*setBlockFunc)(s32, s32, tile_t));
+void handle_physics(map_t *map, void (*setBlockFunc)(map_t *, s32, s32, tile_t *, u32));
 
 #endif /* _PHYSICS_H_ */

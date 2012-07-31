@@ -118,7 +118,6 @@ void mouse_placement()
 	
 	if(ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y())) return;
 	
-	sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
 	s32 bx = get_rootx()+((sfp_event_mouse_x())/16);
 	s32 by = get_rooty()+((sfp_event_mouse_y())/16);
 	
@@ -229,7 +228,7 @@ int main(int argc, char *argv[])
 			if(player != NULL)
 			{
 				render_ui();
-	
+				
 				if(movement_wait==0)
 				{
 					if(sfp_event_key(SFP_KEY_W))
@@ -244,6 +243,8 @@ int main(int argc, char *argv[])
 				
 				if(movement_wait>0) movement_wait--;
 			}
+			
+			sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
 			
 			sfp_render_end();
 		}
