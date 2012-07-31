@@ -6,8 +6,10 @@ lua_State *LS = NULL;
 lua_State *LCg = NULL;
 lua_State *LCs = NULL;
 
-// NOTE: WE WILL NOT PROVIDE STANDARD Lua LIBRARIES.
-// We can provide subsets, but that's it - no string.dump for you!
+// NOTE: WE WILL NOT PROVIDE THE STANDARD Lua LIBRARIES.
+// We will provide our own, and ONLY that.
+// We can provide our in-house implemented *subsets*,
+// but that's it - no string.dump for you!
 
 int sfp_lua_init()
 {

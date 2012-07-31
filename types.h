@@ -55,6 +55,7 @@ struct netpacket
 
 #define NPF_LOGGEDIN 0x00000001
 #define NPF_NPC      0x00000002
+#define NPF_KILLME   0x00000004
 typedef struct netplayer
 {
 	int sockfd;

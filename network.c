@@ -405,6 +405,72 @@ netplayer_t *net_player_new(int sockfd)
 	return np;
 }
 
+void net_server_kick(u16 id, char *msg)
+{
+	netplayer_t *np = server_players[id];
+	if(np == NULL)
+	{
+		fprintf(stderr, "ERROR: netplayer %i does not exist!\n", id);
+		return;
+	}
+	
+	net_pack(np, PKT_KICK, strlen(msg), msg);
+	np->flags |= NPF_KILLME;
+}
+
+void net_player_destroy_server(u16 id)
+{
+	netplayer_t *np = server_players[id];
+	
+	if(np == NULL)
+		return;
+	
+	// SET ME FREEEEEEE
+	if(np->player != NULL)
+	{
+		if(np->player->name != NULL)
+			free(np->player->name);
+		free(np->player);
+	}
+	free(np);
+	server_players[id] = NULL;
+	
+	// fix the top index
+	while(server_player_top > 0)
+	{
+		if(server_players[server_player_top-1] != NULL)
+			break;
+		
+		server_player_top--;
+	}
+}
+
+void net_player_destroy_client(u16 id)
+{
+	if(id == net_id)
+		return;
+	
+	player_t *p = players[id];
+	
+	if(p == NULL)
+		return;
+	
+	// SET ME FREEEEEEE
+	if(p->name != NULL)
+		free(p->name);
+	free(p);
+	players[id] = NULL;
+	
+	// fix the top index
+	while(player_top > 0)
+	{
+		if(players[player_top-1] != NULL)
+			break;
+		
+		player_top--;
+	}
+}
+
 netplayer_t *net_player_allocnew_server(int sockfd)
 {
 	int i;
@@ -515,7 +581,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			player_t *p = players[id];
 			if(p == NULL)
 			{
-				printf("position: entity %i does not exist!\n", id);
+				printf("ERROR: entity %i does not exist!\n", id);
 				break;
 			}
 			
@@ -691,14 +757,22 @@ void net_handle_s2c(netpacket_t *pkt)
 			player_t *p = players[id];
 			if(p == NULL)
 			{
-				printf("position: entity %i does not exist!\n", id);
+				printf("ERROR: entity %i does not exist!\n", id);
 				break;
 			}
 			p->x = *(s32 *)(&pkt->data[2]);
 			p->y = *(s32 *)(&pkt->data[6]);
 		} break;
-		case PKT_ENTITY_DESTRUCTION:
-			break;
+		case PKT_ENTITY_DESTRUCTION: {
+			u16 id = *(u16 *)(&pkt->data[0]);
+			player_t *p = players[id];
+			if(p == NULL)
+			{
+				printf("ERROR: entity %i does not exist!\n", id);
+				break;
+			}
+			net_player_destroy_client(id);
+		} break;
 		
 		case PKT_CHAT:
 			break;
@@ -715,8 +789,15 @@ void net_handle_s2c(netpacket_t *pkt)
 			net_player.flags |= NPF_LOGGEDIN;
 			net_player.player = players[net_id];
 		} break;
-		case PKT_KICK:
-			break;
+		case PKT_KICK: {
+			char msg[256];
+			int msglen = pkt->data[0];
+			msg[msglen] = '\x00';
+			memcpy(msg, &pkt->data[1], msglen);
+			printf("*** WE HAVE BEEN KICKED ***\n");
+			printf("Reason: \"%s\"\n", msg);
+			net_player.flags |= NPF_KILLME;
+		} break;
 	}
 }
 
@@ -931,8 +1012,13 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 				if(i == id)
 					continue;
 				
+				// there MUST be a player in this slot (duh)
 				netplayer_t *xnp = server_players[i];
 				if(xnp == NULL)
+					continue;
+				
+				// cannot send to dead or not logged in connections!
+				if((xnp->flags & NPF_KILLME) || !(xnp->flags & NPF_LOGGEDIN))
 					continue;
 				
 				printf("exch %i %i\n", id, i);
@@ -1149,12 +1235,18 @@ void net_send(netplayer_t *np_to, netplayer_t *np_from, int is_server)
 			int amt = send(sockfd, buf, buf_pos, 0);
 			if(amt != buf_pos)
 			{
-				// TODO: deal with these cases correctly
 				if(amt == -1)
+				{
 					perror("net_send");
-				else
+				} else {
 					fprintf(stderr, "ERROR: expected %i bytes, sent %i!\n",
 						buf_pos, amt);
+				}
+				
+				if(is_server)
+					np->flags |= NPF_KILLME;
+				else
+					net_player.flags |= NPF_KILLME;
 			}
 		}
 	}
@@ -1253,9 +1345,31 @@ void server_update()
 		if(np == NULL)
 			continue;
 		
-		// Skip unallocated sockets (TODO: clean these up)
-		if(np->sockfd == -1)
+		// Any connections we need to kill?
+		if(np->sockfd == -1 || (np->flags & NPF_KILLME))
+		{
+			// Close.
+			if(np->sockfd >= 0)
+				close(np->sockfd);
+			
+			// Destroy.
+			net_player_destroy_server(i);
+			
+			// Tell everyone else.
+			int j;
+			for(j = 0; j < server_player_top; j++)
+			{
+				netplayer_t *xnp = server_players[j];
+				
+				if(xnp == NULL)
+					continue;
+				
+				net_pack(xnp, PKT_ENTITY_DESTRUCTION, i);
+			}
+			
+			// Continue.
 			continue;
+		}
 		
 		// Attempt to receive packets.
 		if(np->sockfd >= 0)
