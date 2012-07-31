@@ -114,6 +114,20 @@ void render_type_tooltip(u8 id)
 	sfp_printf_1x(mousex,mousey-9,0x07,0,"%s",tile_get_name(id));
 }
 
+void verify_tile()
+{
+	u8 tofix;
+	u16 ac_length;
+	u16* allowed_chars = tile_get_allowed_chars(*drawing_tile,&ac_length);
+	assert(ac_length>0);
+	u16 i;
+	tofix=1;
+	for(i=0;i<ac_length;i++)
+		if(allowed_chars[i] == drawing_tile->chr) tofix=0;
+	if(tofix==1) drawing_tile->chr = allowed_chars[0];
+	tofix=1;
+}
+
 void render_type_window(void)
 {
 	u8 lmb = sfp_event_mouse_button(0);
@@ -138,7 +152,11 @@ void render_type_window(void)
 		if(mouse_in)
 		{
 			mouse_in_id = j;
-			if(lmb) drawing_tile->type = j;
+			if(lmb)
+			{
+				drawing_tile->type = j;
+				verify_tile();
+			}
 		}
 	}
 	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-128,112,128);
@@ -166,15 +184,21 @@ void render_char_window(void)
 	for(i=0;i<24;i++)
 	{
 		if(i+(scrollbar_pos*4)>=ac_length) break;
-		if(allowed_chars != NULL) j = allowed_chars[i+(scrollbar_pos*4)];
-		else j = i+(scrollbar_pos*4);
+		if(allowed_chars != NULL)
+			j = allowed_chars[i+(scrollbar_pos*4)];
+		else
+			j = i+(scrollbar_pos*4);
 		if(j>255) break;
 		px = 8+((i%4)*24);
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-152);
 		mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:(drawing_tile->chr==j?0xAAAAAA:0x555555)));
-		if(mouse_in && lmb) drawing_tile->chr = j;
+		if(mouse_in && lmb)
+		{
+			drawing_tile->chr = j;
+			verify_tile();	
+		}
 	}
 	
 	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-152,112,152);
@@ -214,6 +238,7 @@ void render_color_window(void)
 			tbg = i;
 	}
 	drawing_tile->col = (tbg<<4)|tfg;
+	verify_tile();
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0xCCCCCC);
 }
 

@@ -24,7 +24,7 @@ u16* tile_get_allowed_chars(tile_t tile, u16* length)
 {
 	int i;
 	static u16 chars[32768];
-	*length = 256;
+	*length = 0;
 	switch(tile.type)
 	{
 		case TILE_WIRE: {
@@ -46,6 +46,7 @@ u16* tile_get_allowed_chars(tile_t tile, u16* length)
 			for(i = 0; i < 256; i++)
 				chars[i] = i;
 			*length = 256;
+			break;
 		}
 	}
 	return chars;
