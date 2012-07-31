@@ -7,9 +7,6 @@
 #define MAP_RW_DIR "pm-map"
 #define DIR_DELIM "/"
 
-#define LAYER_WIDTH 64
-#define LAYER_HEIGHT 64
-
 #define LAYER_VERSION 1
 #define LAYER_LOWEST_VERSION 1
 

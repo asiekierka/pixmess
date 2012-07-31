@@ -349,32 +349,57 @@ layer_t *layer_dummy_request(s32 x, s32 y)
 	return a;
 };
 
+u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
+{
+	u32 i;
+	u32 j;
+	u8 k;
+	u32 p;
+	for(i=0;i<layer->y;i++)
+		for(j=0;j<layer->x;j+=8)
+		{
+			if(layer->updmask[p]>0)
+				for(k=0;k<8;k++)
+					if(((layer->updmask[p])>>k)&1)
+					{
+						*ux=j+k; *uy=i;
+						layer->updmask[p] &= 0xFF ^ (1<<k);
+						return 1;
+					}
+			p++;
+		}
+};
+
+void layer_set_update(layer_t *layer, u32 ux, u32 uy)
+{
+	u32 i = layer->y * ((layer->x+7)/8);
+	u32 k = (layer->x%8);
+	layer->updmask[p] |= 1<<k;
+}
+
+map_t *map_new(u32 layercount)
+{
+	u32 i;
+	u32 j;
+
+	map_t *map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*layercount);
+	map->layer_count = layercount;
+
+	for(i=0;i<layercount; i++)
+	{
+		map->layers[i].refcount = 0;
+		map->layers[i].data = NULL;
+	}
+	map->layer_cmpbuf = NULL;
+}
+
 void map_init(void)
 {
-	int i;
-	
-	// XXX: could refactor this to be some map_new() function --GM
-	client_map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*LAYER_SIZE_CLIENT);
-	server_map = malloc(sizeof(map_t) + sizeof(layerinfo_t)*LAYER_SIZE_SERVER);
-	client_map->layer_count = LAYER_SIZE_CLIENT;
-	server_map->layer_count = LAYER_SIZE_SERVER;
-	
-	for(i=0;i<LAYER_SIZE_CLIENT; i++)
-	{
-		client_map->layers[i].refcount = 0;
-		client_map->layers[i].data = NULL;
-	}
-	
-	for(i=0;i<LAYER_SIZE_SERVER; i++)
-	{
-		server_map->layers[i].refcount = 0;
-		server_map->layers[i].data = NULL;
-	}
+	client_map = map_new(LAYER_SIZE_CLIENT);
+	server_map = map_new(LAYER_SIZE_SERVER);
 	
 	client_map->fpath = "xmap/";
 	server_map->fpath = "svmap/";
-	client_map->layer_cmpbuf = NULL;
-	server_map->layer_cmpbuf = NULL;
 }
 
 void layer_unload(map_t *map, int i)
