@@ -374,28 +374,39 @@ void layer_unload(map_t *map, int i)
 	layer_free(map->layers[i]);
 }
 
+int map_find_unused_layer(map_t *map)
+{
+	u16 i;
+	for(i=0;i<LAYER_SIZE;i++)
+		if(map->layer_set[i] == LAYER_UNALLOC)
+			return i;
+
+	for(i=0;i<LAYER_SIZE;i++)
+		if(map->layer_set[i] == LAYER_UNUSED)
+		{
+			layer_unload(map, i);
+			return i;
+		}
+
+	return -1;
+}
+
 layer_t *map_get_new_layer(map_t *map, s32 x, s32 y)
 {
-	int i;
+	int i = map_find_unused_layer(map);
 	
-	// Find a blank layer
-	for(i=0;i<LAYER_SIZE;i++)
+	if(i>=0)
 	{
-		if(map->layer_set[i]==LAYER_UNUSED)
-			layer_unload(map, i);
-		if(map->layer_set[i]==LAYER_UNALLOC)
-		{
-			map->layers[i] = layer_new(LAYER_WIDTH, LAYER_HEIGHT,
-				LAYER_TEMPLATE_CLASSIC);
+		map->layers[i] = layer_new(LAYER_WIDTH, LAYER_HEIGHT,
+			LAYER_TEMPLATE_CLASSIC);
 			
-			if(map->layers[i]!=NULL)
-			{
-				map->layer_x[i] = x;
-				map->layer_y[i] = y;
-				map->layer_set[i] = LAYER_USED;
-			}
-			return map->layers[i];
+		if(map->layers[i]!=NULL)
+		{
+			map->layer_x[i] = x;
+			map->layer_y[i] = y;
+			map->layer_set[i] = LAYER_USED;
 		}
+		return map->layers[i];
 	}
 	return NULL;
 }
@@ -422,26 +433,21 @@ layer_t *map_get_net_layer(map_t *map, s32 x, s32 y)
 				return NULL;
 	
 	// Create empty layer
-	for(i=0;i<LAYER_SIZE;i++)
+	i = map_find_unused_layer(map);
+	map->layers[i] = net_layer_request(x,y,i);
+	map->layer_x[i] = x;
+	map->layer_y[i] = y;
+	if(i>=0)
 	{
-		if(map->layer_set[i]==LAYER_UNUSED)
-			layer_unload(map, i);
-		if(map->layer_set[i]==LAYER_UNALLOC)
+		if(map->layers[i] == NULL)
 		{
-			map->layers[i] = net_layer_request(x,y,i);
-			map->layer_x[i] = x;
-			map->layer_y[i] = y;
-
-			if(map->layers[i] == NULL)
-			{
-				map->layer_set[i] = LAYER_REQUESTED;
+			map->layer_set[i] = LAYER_REQUESTED;
+			return NULL;
+		} else {
+			if(map->layer_x[i] != x || map->layer_y[i] != y)
 				return NULL;
-			} else {
-				if(map->layer_x[i] != x || map->layer_y[i] != y)
-					return NULL;
-				map->layer_set[i] = LAYER_USED;
-				return map->layers[i];
-			}
+			map->layer_set[i] = LAYER_USED;
+			return map->layers[i];
 		}
 	}
 	return NULL;
@@ -449,24 +455,18 @@ layer_t *map_get_net_layer(map_t *map, s32 x, s32 y)
 
 layer_t *map_get_file_layer(map_t *map, s32 x, s32 y)
 {
-	int i;
-	
-	// Load layer
-	for(i=0;i<LAYER_SIZE;i++)
+	int i = map_find_unused_layer(map);
+
+	if(i>=0)
 	{
-		if(map->layer_set[i]==LAYER_UNUSED)
-			layer_unload(map, i);
-		if(map->layer_set[i]==LAYER_UNALLOC)
+		map->layers[i] = layer_load(map,x,y);
+		if(map->layers[i]!=NULL)
 		{
-			map->layers[i] = layer_load(map,x,y);
-			if(map->layers[i]!=NULL)
-			{
-				map->layer_x[i] = x;
-				map->layer_y[i] = y;
-				map->layer_set[i] = LAYER_USED;
-			}
-			return map->layers[i];
+			map->layer_x[i] = x;
+			map->layer_y[i] = y;
+			map->layer_set[i] = LAYER_USED;
 		}
+		return map->layers[i];
 	}
 	return NULL;
 }
