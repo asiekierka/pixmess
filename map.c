@@ -29,6 +29,8 @@ void layer_free(layer_t *layer)
 			free(t->data);
 	}
 	
+	free(layer->updmask);
+	free(layer->tiles);
 	free(layer);
 }
 
@@ -43,6 +45,7 @@ layer_t *layer_new(int w, int h, int template)
 	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
 	a->w = w;
 	a->h = h;
+	a->updmask = malloc((w+7)/8+h);
 	a->tiles = (tile_t *)malloc(sizeof(tile_t)*w*h);
 	int i;
 	

@@ -41,6 +41,7 @@ typedef struct layer
 	s32 x,y;
 	u16 w,h;
 	tile_t *tiles;
+	u8 *updmask;
 } layer_t;
 
 typedef struct netpacket netpacket_t;

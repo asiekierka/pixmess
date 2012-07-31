@@ -22,28 +22,31 @@ inline u8 tile_active(tile_t tile) { return 0; }
 
 u16* tile_get_allowed_chars(tile_t tile, u16* length)
 {
-	u16* chars = NULL;
+	int i;
+	static u16 chars[32768];
 	*length = 256;
 	switch(tile.type)
 	{
 		case TILE_WIRE: {
-			chars = (u16*)malloc(sizeof(u16)*1);
 			chars[0] = 197;
 			*length = 1;
 			break; }
 		case TILE_CROSSER: {
-			chars = (u16*)malloc(sizeof(u16)*1);
 			chars[0] = 206;
 			*length = 1;
 			break; }
 		case TILE_PNAND: {
-			chars = (u16*)malloc(sizeof(u16)*4);
 			chars[0] = 24;
 			chars[1] = 25;
 			chars[2] = 26;
 			chars[3] = 27;
 			*length = 4;
 			break; }
+		default: {
+			for(i = 0; i < 256; i++)
+				chars[i] = i;
+			*length = 256;
+		}
 	}
 	return chars;
 }
@@ -116,6 +119,7 @@ inline u8 tile_walkable(tile_t tile)
 		case TILE_DUMMY:
 		case TILE_FLOOR:
 		case TILE_ROOF:
+		case TILE_WIRE:
 			return 1;
 	}
 }
