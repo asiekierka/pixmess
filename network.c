@@ -355,6 +355,24 @@ netplayer_t *net_player_new(u16 id, int sockfd, s32 x, s32 y, u8 col, u16 chr)
 	return np;
 }
 
+netplayer_t *net_player_allocnew(int sockfd, s32 x, s32 y, u8 col, u16 chr)
+{
+	int i;
+	
+	// TODO: set some "max players" variable
+	for(i = 0; i < 65536; i++)
+	{
+		if(server_players[i] == NULL)
+		{
+			server_players[i] = net_player_new((u16)i, sockfd, x, y, col, chr);
+			return server_players[i];
+		}
+	}
+	
+	printf("Uh oh, out of player slots!\n");
+	return NULL;
+}
+
 void net_handle_s2c(netpacket_t *pkt)
 {
 	int i;
@@ -751,7 +769,7 @@ void net_recv(netplayer_t *np)
 	if(np->sockfd >= 0)
 	for(;;)
 	{
-		int rcount = recv(np->sockfd, np->pkt_buf,
+		int rcount = recv(np->sockfd, &np->pkt_buf[np->pkt_buf_pos],
 			NET_MTU-np->pkt_buf_pos,
 			MSG_DONTWAIT);
 		
@@ -971,6 +989,37 @@ void server_update()
 	if(server_sockfd == FD_LOCAL_IMMEDIATE)
 		return;
 	
+	// TODO: select() like a boss
+	
+	// Poll for new connection.
+	// TODO: remove old connections eventually!
+	if(server_sockfd >= 0)
+	{
+		struct pollfd pfd;
+		pfd.fd = server_sockfd;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
+		
+		poll(&pfd, 1, 0);
+		if(pfd.revents & POLLIN)
+		{
+			struct sockaddr_in sa;
+			socklen_t sa_len = sizeof(sa);
+			int csockfd = accept(server_sockfd, (struct sockaddr *)&sa, &sa_len);
+			if(csockfd == -1)
+			{
+				fprintf(stderr, "ERROR: accept failed\n");
+				perror("server_update");
+			} else {
+				// TODO: use this info!
+				printf("%08X -> port %i connected!\n",
+					sa.sin_addr.s_addr, sa.sin_port);
+				// TODO: give a decent spawn location!
+				// TODO: actually save this for login!
+				netplayer_t *npx = net_player_allocnew(csockfd, 0, 0, 0x1F, 0x02);
+			}
+		}
+	}
 	
 	netpacket_t *pkt, *npkt;
 	
@@ -1006,7 +1055,7 @@ void server_update()
 	}
 }
 
-int net_init()
+int net_init(char *addr, int port)
 {
 	int i;
 	
@@ -1023,17 +1072,121 @@ int net_init()
 	
 	// Prepare the server stuff
 	
-	// SINGLEPLAYER, TODO: MULTIPLAYER
-	{
-		int sv[2] = {FD_LOCAL_PKTCOPY, FD_LOCAL_PKTCOPY};
-		socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
-		printf("%i %i\n", sv[0], sv[1]);
-		net_player.sockfd = sv[0];
-		server_sockfd_socketpair = sv[1];
-		server_sockfd = FD_LOCAL_SOCKETPAIR;
-	}
-	//net_player.sockfd = server_sockfd = FD_LOCAL_PKTCOPY;
+	// Initiate appropriate connections
+	/*
+	int sv[2] = {FD_LOCAL_PKTCOPY, FD_LOCAL_PKTCOPY};
+	socketpair(AF_UNIX, SOCK_STREAM, 0, sv);
+	printf("%i %i\n", sv[0], sv[1]);
+	net_player.sockfd = sv[0];
+	server_sockfd_socketpair = sv[1];
+	server_sockfd = FD_LOCAL_SOCKETPAIR;
+	*/
+	net_player.sockfd = FD_LOCAL_PKTCOPY;
+	server_sockfd = -1;
 	//net_player.sockfd = server_sockfd = FD_LOCAL_IMMEDIATE;
+	if(port == 0)
+	{
+		// PKTCOPY.
+		server_sockfd = FD_LOCAL_PKTCOPY;
+	} else {
+		struct sockaddr_in sa;
+		
+		sa.sin_family = AF_INET;
+		sa.sin_port = htons(port);
+		
+		if(addr == NULL) {
+			// host server!
+			// FIXME: use PKTCOPY for the local user!
+			// TODO: IPv6 support
+			
+			// server
+			sa.sin_addr.s_addr = 0;
+			
+			server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+			if(server_sockfd == -1)
+			{
+				fprintf(stderr, "ERROR: could not create server socket!\n");
+				perror("net_init");
+				return 1;
+			}
+			
+			if(bind(server_sockfd, &sa, sizeof(sa)))
+			{
+				fprintf(stderr, "ERROR: could not bind server socket!\n");
+				perror("net_init");
+				shutdown(server_sockfd, SHUT_RDWR);
+				close(server_sockfd);
+				return 1;
+			}
+			
+			if(listen(server_sockfd, 1))
+			{
+				fprintf(stderr, "ERROR: could not tell server socket to listen!\n");
+				// Naughty kids!
+				perror("net_init");
+				shutdown(server_sockfd, SHUT_RDWR);
+				close(server_sockfd);
+				return 1;
+			}
+		}
+		
+		// client connect
+		struct hostent *he = gethostbyname("127.0.0.1");
+		if(he == NULL || he->h_addr_list[0] == NULL)
+		{
+			fprintf(stderr, "ERROR: gethostbyname failed!\n");
+			
+			if(server_sockfd != -1)
+			{
+				shutdown(server_sockfd, SHUT_RDWR);
+				close(server_sockfd);
+			}
+			
+			//if(he != NULL)
+			//	free(he);
+			
+			return 1;
+		}
+		
+		memcpy(&sa.sin_addr.s_addr,
+			(struct in_addr *)(he->h_addr_list[0]),
+			sizeof(struct in_addr));
+		
+		//if(he != NULL)
+		//	free(he);
+		
+		net_player.sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if(net_player.sockfd == -1)
+		{
+			fprintf(stderr, "ERROR: could not create client socket!\n");
+			perror("net_init");
+			
+			if(server_sockfd != -1)
+			{
+				shutdown(server_sockfd, SHUT_RDWR);
+				close(server_sockfd);
+			}
+			
+			return 1;
+		}
+		
+		if(connect(net_player.sockfd, &sa, sizeof(sa)))
+		{
+			fprintf(stderr, "ERROR: could not connect to server!\n");
+			perror("net_init");
+			
+			close(net_player.sockfd);
+			
+			if(server_sockfd != -1)
+			{
+				shutdown(server_sockfd, SHUT_RDWR);
+				close(server_sockfd);
+			}
+			
+			return 1;
+		}
+	}
+	
 	
 	for(i = 0; i < 65536; i++)
 		server_players[i] = NULL;

@@ -95,6 +95,9 @@ on_chat(fn(id, str)) S/Cg
 	
 	id is undefined for the clientside version.
 
+on_chunk_gen(fn(x,y,w,h)) S
+	Sets the function to be called when a chunk is generated.
+
 *
 * OK, now onto some interesting stuff.
 *

@@ -121,10 +121,39 @@ int main(int argc, char *argv[])
 {
 	int i;
 	
+	char *net_addr = NULL;
+	int net_port = 0;
+	
+	// Parse arguments
+	// Currently just doing it this way:
+	// - if none, PKTCOPY mode.
+	// - if one, that's a port and it's a multiplayer server/local client.
+	// - if two, address and port, and it's a multiplayer client.
+	// - else, print use
+	switch(argc-1)
+	{
+		case 0:
+			break;
+		case 1:
+			net_port = atoi(argv[1]);
+			break;
+		case 2:
+			net_addr = argv[1];
+			net_port = atoi(argv[2]);
+			break;
+		default:
+			printf("usage:\n");
+			printf("%s\n\t- PKTCOPY singleplayer mode\n\n", argv[0]);
+			printf("%s port\n\t- server\n\n", argv[0]);
+			printf("%s hostname port\n\t- client\n\n", argv[0]);
+			return 99;
+	}
+	
+	// Initialise stuff.
 	if(sfp_init_render())
 		return 1;
 	
-	if(net_init())
+	if(net_init(net_addr, net_port))
 		return 1;
 	
 	if(sfp_lua_init())

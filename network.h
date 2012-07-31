@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include <netdb.h>
+#include <poll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

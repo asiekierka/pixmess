@@ -52,11 +52,15 @@ struct netpacket
 };
 
 #define NET_MTU 1024
+
+#define NPF_LOGGEDIN 0x00000001
+#define NPF_ACTIVE 0x00000001
 typedef struct netplayer
 {
 	u16 id;
 	int sockfd;
 	player_t player;
+	u32 flags;
 	netpacket_t *pkt_in_head, *pkt_in_tail;
 	netpacket_t *pkt_out_head, *pkt_out_tail;
 	
@@ -64,9 +68,22 @@ typedef struct netplayer
 	int pkt_buf_pos;
 } netplayer_t;
 
+typedef struct layerinfo
+{
+	layer_t *data;
+	u8 set;
+	s32 x,y;
+	
+	u8 *cmpbuf;
+	u32 cmplen;
+	u32 cmppos;
+	u32 rawlen;
+} layerinfo_t;
+
 typedef struct map
 {
 	char *fpath;
+	
 	layer_t *layers[LAYER_SIZE];
 	u8 layer_set[LAYER_SIZE];
 	s32 layer_x[LAYER_SIZE];
