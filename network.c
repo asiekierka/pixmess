@@ -862,7 +862,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			t.datalen = 0;
 			t.data = NULL;
 			
-			server_set_tile(x, y, t);
+			server_map->f_set_tile(server_map, x, y, t);
 			for(i = 0; i < server_player_top; i++)
 				if(server_players[i] != NULL)
 					net_pack(server_players[i], PKT_BLOCK_SET,
@@ -885,7 +885,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			t.datalen = 0;
 			t.data = NULL;
 			
-			server_push_tile(x, y, t);
+			server_map->f_push_tile(server_map, x, y, t);
 			for(i = 0; i < server_player_top; i++)
 				if(server_players[i] != NULL)
 					net_pack(server_players[i], PKT_BLOCK_PUSH,
@@ -896,7 +896,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			
-			server_pop_tile(x, y);
+			server_map->f_pop_tile(server_map, x, y);
 			
 			for(i = 0; i < server_player_top; i++)
 				if(server_players[i] != NULL)
@@ -1333,11 +1333,7 @@ void net_update()
 	net_send(np, &net_player, 0);
 	
 	// Update some stuff!
-	handle_physics(client_map,
-		client_get_tile,
-		client_set_tile_ext,
-		client_alloc_tile_data,
-		client_set_tile_data);
+	handle_physics(client_map);
 }
 
 void server_update()
@@ -1436,11 +1432,7 @@ void server_update()
 	}
 	
 	// Update some stuff!
-	handle_physics(server_map,
-		server_get_tile,
-		server_set_tile_ext,
-		server_alloc_tile_data,
-		server_set_tile_data);
+	handle_physics(server_map);
 }
 
 int net_init(char *addr, int port)

@@ -80,7 +80,8 @@ typedef struct layerinfo
 	layer_t *data;
 } layerinfo_t;
 
-typedef struct map
+typedef struct map map_t;
+struct map
 {
 	char *fpath;
 	
@@ -91,9 +92,18 @@ typedef struct map
 	s32 layer_cmpx;
 	s32 layer_cmpy;
 	
+	// OOP. C++ JUST GOT *TOLD*
+	tile_t (*f_get_tile)(map_t *map, s32 x, s32 y);
+	void (*f_set_tile)(map_t *map, s32 x, s32 y, tile_t tile);
+	void (*f_push_tile)(map_t *map, s32 x, s32 y, tile_t tile);
+	void (*f_pop_tile)(map_t *map, s32 x, s32 y);
+	void (*f_set_tile_ext)(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile, int sendflag);
+	void (*f_alloc_tile_data)(map_t *map, s32 x, s32 y, u8 uidx, u16 datalen, int sendflag);
+	void (*f_set_tile_data)(map_t *map, s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag);
+	
 	int layer_count;
 	layerinfo_t layers[];
-} map_t;
+};
 
 enum
 {

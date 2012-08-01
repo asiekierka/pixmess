@@ -5,7 +5,7 @@
 
 // TODO DRY this out a bit --GM
 
-void server_load_chunk(s32 x, s32 y)
+void server_load_chunk(map_t *map, s32 x, s32 y)
 {
 	s32 px = divneg(x,LAYER_WIDTH);
 	s32 py = divneg(y,LAYER_HEIGHT);
@@ -13,18 +13,18 @@ void server_load_chunk(s32 x, s32 y)
 		map_get_net_layer(server_map,px,py);
 }
 
-void server_set_tile(s32 x, s32 y, tile_t tile)
+void server_set_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
-	server_load_chunk(x,y);
-	map_set_tile(server_map,x,y,tile);
+	server_load_chunk(map, x, y);
+	map_set_tile(map, x, y, tile);
 }
 
-void server_set_tile_ext(s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
+void server_set_tile_ext(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
 {
 	int i;
 	
-	server_load_chunk(x,y);
-	map_set_tile_ext(server_map,x,y,uidx,tile);
+	server_load_chunk(map, x, y);
+	map_set_tile_ext(map, x, y, uidx, tile);
 	
 	if(!sendflag)
 		return;
@@ -32,15 +32,15 @@ void server_set_tile_ext(s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)
 			net_pack(server_players[i], PKT_BLOCK_SET_EXT,
-				x,y,uidx,
+				x, y, uidx,
 				tile.type, tile.col, tile.chr);
 }
 
-void server_alloc_tile_data(s32 x, s32 y, u8 uidx, u16 datalen, int sendflag)
+void server_alloc_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u16 datalen, int sendflag)
 {
 	int i;
 	
-	server_load_chunk(x,y);
+	server_load_chunk(map, x, y);
 	map_alloc_tile_data(server_map,x,y,uidx,datalen);
 	
 	if(!sendflag)
@@ -49,15 +49,15 @@ void server_alloc_tile_data(s32 x, s32 y, u8 uidx, u16 datalen, int sendflag)
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)
 			net_pack(server_players[i], PKT_BLOCK_ALLOC_DATA,
-				x,y,uidx,datalen);
+				x, y, uidx, datalen);
 }
 
-void server_set_tile_data(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag)
+void server_set_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag)
 {
 	int i;
 	
-	server_load_chunk(x,y);
-	map_alloc_tile_data(server_map,x,y,uidx,datalen);
+	server_load_chunk(map, x, y);
+	map_alloc_tile_data(map, x, y, uidx, datalen);
 	
 	if(!sendflag)
 		return;
@@ -65,34 +65,34 @@ void server_set_tile_data(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *da
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)
 			net_pack(server_players[i], PKT_BLOCK_SET_DATA,
-				x,y,uidx,datalen,datapos,data);
+				x, y, uidx, datalen, datapos, data);
 }
 
-tile_t server_get_tile(s32 x, s32 y)
+tile_t server_get_tile(map_t *map, s32 x, s32 y)
 {
-	server_load_chunk(x,y);
+	server_load_chunk(map, x, y);
 	return map_get_tile(server_map,x,y);
 }
 
-void server_push_tile(s32 x, s32 y, tile_t tile)
+void server_push_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
-	server_load_chunk(x,y);
+	server_load_chunk(map, x, y);
 	map_push_tile(server_map,x,y,tile);
 }
 
-void server_pop_tile(s32 x, s32 y)
+void server_pop_tile(map_t *map, s32 x, s32 y)
 {
-	server_load_chunk(x,y);
+	server_load_chunk(map, x, y);
 	map_pop_tile(server_map,x,y);
 }
 
-u8 server_get_next_update(int *lidx, s32 *x, s32 *y)
+u8 server_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 {
 	return map_get_next_update(server_map,lidx,x,y);
 }
 
-void server_set_update(s32 x, s32 y)
+void server_set_update(map_t *map, s32 x, s32 y)
 {
-	server_load_chunk(x,y);
-	map_set_update(server_map,x,y);
+	server_load_chunk(map, x, y);
+	map_set_update(map,x,y);
 }

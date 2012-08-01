@@ -1,6 +1,8 @@
+#include "client.h"
 #include "common.h"
 #include "map.h"
 #include "network.h"
+#include "server.h"
 
 // TODO these defintions should have a file later on, maybe
 
@@ -405,15 +407,6 @@ map_t *map_new(u32 layercount)
 	}
 	map->layer_cmpbuf = NULL;
 	return map;
-}
-
-void map_init(void)
-{
-	client_map = map_new(LAYER_SIZE_CLIENT);
-	server_map = map_new(LAYER_SIZE_SERVER);
-	
-	client_map->fpath = "xmap/";
-	server_map->fpath = "svmap/";
 }
 
 void layer_unload(map_t *map, int i)
@@ -861,4 +854,29 @@ void map_set_update(map_t *map, s32 x, s32 y)
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
 	layer_set_update(chunk, absmod(x,chunk->w),absmod(y,chunk->h));
+}
+
+void map_init(void)
+{
+	client_map = map_new(LAYER_SIZE_CLIENT);
+	server_map = map_new(LAYER_SIZE_SERVER);
+	
+	client_map->f_get_tile = client_get_tile;
+	client_map->f_set_tile = client_set_tile;
+	client_map->f_push_tile = client_push_tile;
+	client_map->f_pop_tile = client_pop_tile;
+	client_map->f_set_tile_ext = client_set_tile_ext;
+	client_map->f_alloc_tile_data = client_alloc_tile_data;
+	client_map->f_set_tile_data = client_set_tile_data;
+	
+	server_map->f_get_tile = server_get_tile;
+	server_map->f_set_tile = server_set_tile;
+	server_map->f_push_tile = server_push_tile;
+	server_map->f_pop_tile = server_pop_tile;
+	server_map->f_set_tile_ext = server_set_tile_ext;
+	server_map->f_alloc_tile_data = server_alloc_tile_data;
+	server_map->f_set_tile_data = server_set_tile_data;
+	
+	client_map->fpath = "xmap/";
+	server_map->fpath = "svmap/";
 }

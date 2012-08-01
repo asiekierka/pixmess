@@ -31,7 +31,7 @@ void player_move(s8 dx, s8 dy)
 	int ldx = -player->x;
 	int ldy = -player->y;
 	
-	if(tile_walkable(client_get_tile(newx,newy)))
+	if(tile_walkable(client_map->f_get_tile(client_map,newx,newy)))
 	{
 		player->x=newx;
 		player->y=newy;
@@ -75,7 +75,7 @@ void display(player_t *p)
 	{
 		for(i=0;i<SFP_FIELD_WIDTH;i++)
 		{
-			tile = client_get_tile(rx,ry);
+			tile = client_map->f_get_tile(client_map,rx,ry);
 			sfp_putc_block_2x(i,j,(tile.col>>4),(tile.col&15),tile.chr);
 			rx++;
 		}
@@ -93,7 +93,7 @@ void display(player_t *p)
 		u32 px = xp->x-orx;
 		u32 py = xp->y-ory;
 		char* name = xp->name;
-		if(!tile_overlay(client_get_tile(xp->x,xp->y)))
+		if(!tile_overlay(client_map->f_get_tile(client_map,xp->x,xp->y)))
 			sfp_putc_block_2x(px,py,(xp->col>>4),(xp->col&15),xp->chr);
 		
 		u32 pnamex = (px*16)-((strlen(name))*4)+8;
@@ -125,17 +125,17 @@ void mouse_placement()
 	
 	if(pressing_0 && (lastx != bx || lasty != by || !pressed_0))
 	{
-		client_push_tile(bx,by,*ui_get_tile());
+		client_map->f_push_tile(client_map,bx,by,*ui_get_tile());
 	}
 	else if(pressing_1 && (lastx != bx || lasty != by || !pressed_1))
 	{
 		tile_t *tile = ui_get_tile();
-		tile_t map_tile = client_get_tile(bx,by);
+		tile_t map_tile = client_map->f_get_tile(client_map, bx, by);
 		memcpy(tile,&map_tile,sizeof(tile_t));
 	}
 	else if(pressing_2 && (lastx != bx || lasty != by || !pressed_2))
 	{
-		client_pop_tile(bx,by);
+		client_map->f_pop_tile(client_map,bx,by);
 	}
 	
 	pressed_0 = pressing_0;

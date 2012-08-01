@@ -2,11 +2,7 @@
 #include "physics.h"
 #include "types.h"
 
-int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx,
-	tile_t (*f_get_block)(s32, s32),
-	void (*f_set_block)(s32, s32, u8, tile_t, int),
-	void (*f_alloc_data)(s32, s32, u8, u16, int),
-	void (*f_set_data)(s32, s32, u8, u8, u16, u8 *, int))
+int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 {
 	printf("Attempting update on %i,%i,%i\n",x,y,uidx);
 	
@@ -21,7 +17,8 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx,
 			{
 				printf("LOLWIRE\n");
 				tile->col ^= 0x08;
-				f_set_block(x,y,uidx,*tile,0);
+				map->f_set_tile_ext(map, x, y, uidx,
+					*tile, 0);
 			}
 			break;
 	}
@@ -29,11 +26,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx,
 	return 0;
 }
 
-void handle_physics(map_t *map,
-	tile_t (*f_get_block)(s32, s32),
-	void (*f_set_block)(s32, s32, u8, tile_t, int),
-	void (*f_alloc_data)(s32, s32, u8, u16, int),
-	void (*f_set_data)(s32, s32, u8, u8, u16, u8 *, int))
+void handle_physics(map_t *map)
 {
 	s32 x, y;
 	int lidx = 0;
@@ -54,8 +47,7 @@ void handle_physics(map_t *map,
 			
 			if(tile_active(new_tile))
 			{
-				int handle_ret = handle_physics_tile(map, x, y, &new_tile, uidx,
-					f_get_block, f_set_block, f_alloc_data, f_set_data);
+				int handle_ret = handle_physics_tile(map, x, y, &new_tile, uidx);
 				x++;
 				
 				// TODO: handle some possible return codes here!
