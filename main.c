@@ -295,5 +295,11 @@ int main(int argc, char *argv[])
 	
 	printf("DONE.\n");
 	
+#ifdef WIN32
+	// DEBUG: attempt to clean up in a rather nasty way
+	// as i symlink stderr.txt and stdout.txt to /dev/stderr --GM
+	abort();
+#endif
+	
 	return 0;
 }

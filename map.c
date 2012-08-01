@@ -115,7 +115,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	
 	// create a temp file
 #ifdef WIN32
-	FILE *fp = fopen("windows.sucks.tmp","wb");
+	FILE *fp = fopen("windows.sucks.tmp","w+b");
 #else
 	FILE *fp = tmpfile();
 #endif
@@ -171,6 +171,7 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	// calculate size
 	// (i personally doubt you'd get a >=2GB layer --GM)
 	*rawlen = (int)ftell(fp);
+	fseek(fp, 0, SEEK_SET);
 	if(fseek(fp, 0, SEEK_SET) != 0)
 	{
 		fprintf(stderr, "ERROR: could not seek to start of temp file\n");
@@ -189,26 +190,21 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	}
 	
 	// very rare case of me checking the return value of fread --GM
-#ifdef WIN32
-	fread(buf_raw, *rawlen, 1, fp);
-#else
 	if(fread(buf_raw, *rawlen, 1, fp) != 1)
 	{
 		fprintf(stderr, "FATAL: YOUR OS SUCKS\n");
 		perror("layer_serialise");
 		abort(); // die badly - this should NEVER happen!
 	}
-#endif
 	
 	// construct compress buffer
 	// length calculation is based on the max size of a "store" block
 	// plus overhead, plus a little bit more breathing room too.
-	*cmplen = (u32)((((u64)*rawlen)*(u64)32005)/(u64)32000)+1024;
-	u8 *buf_cmp = malloc(*cmplen);
+	uLongf cmplen_zlib = compressBound(*rawlen);
+	u8 *buf_cmp = malloc((int)cmplen_zlib);
 	
 	// compress it!
-	uLongf cmplen_zlib = *cmplen;
-	int zerr = compress(buf_cmp, &cmplen_zlib, buf_raw, *rawlen);
+	int zerr = compress2(buf_cmp, &cmplen_zlib, buf_raw, *rawlen, 9);
 	if(zerr != Z_OK)
 	{
 		fprintf(stderr, "ERROR: could not compress layer - %i\n", zerr);
