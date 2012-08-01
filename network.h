@@ -35,8 +35,13 @@ extern netplayer_t net_player;
 extern int player_top;
 extern player_t *players[];
 
+extern netplayer_t *server_players[];
+extern int server_player_top;
+
 #define SFP_PROTO_VERSION 0x0001
 int net_init();
+
+netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...);
 
 void net_login(u8 col, u16 chr, char *name);
 layer_t *net_layer_request(s32 x, s32 y);
@@ -57,6 +62,9 @@ enum
 	PKT_BLOCK_SET = 0x01,
 	PKT_BLOCK_PUSH,
 	PKT_BLOCK_POP,
+	PKT_BLOCK_SET_EXT,
+	PKT_BLOCK_ALLOC_DATA,
+	PKT_BLOCK_SET_DATA,
 	
 	PKT_ENTITY_MOVEMENT = 0x10,
 	PKT_ENTITY_CREATION,

@@ -39,6 +39,17 @@ $03 = block_pop(s32 x, s32 y) *->*
 	
 	If there is no under type, set the tile to a col=0x07 ch=0x20 dummy.
 
+$04 = block_set_ext(s32 x, s32 y, u8 uidx, s8 typ, s8 col, s16 ch) S->C
+	Sets a block on a layer which might not be on the top.
+
+$05 = block_alloc_data(s32 x, s32 y, u8 uidx, u16 size) S->C
+$06 = block_set_data(s32 x, s32 y, u8 uidx, u16 offs, pstr8 data) S->C
+	Sets or allocates data for a block which might not be on the top.
+	
+	block_alloc_data sets all the data to 0 when called.
+	
+	NOTE: THESE ARE CURRENTLY ONLY S->C.
+
 $10 = entity_movement(u16 id, s8 dx, s8 dy) S->C
 $10 = entity_movement(u8 dir) C->S
 	Indicates a player's movement in direction (dx,dy).

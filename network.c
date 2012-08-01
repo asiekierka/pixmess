@@ -1,12 +1,13 @@
 #include "common.h"
 #include "map.h"
 #include "network.h"
+#include "physics.h"
 #include "player.h"
 #include "server.h"
 
 // some delicious strings
 char *net_pktstr_c2s[128] = {
-	NULL, "44112", "44112", "44", NULL, NULL, NULL, NULL,
+	NULL, "44112", "44112", "44", "441112", "4412", "4412s", NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	"1", NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -32,7 +33,7 @@ char *net_pktstr_c2s[128] = {
 };
 
 char *net_pktstr_s2c[128] = {
-	NULL, "44112", "44112", "44", NULL, NULL, NULL, NULL,
+	NULL, "44112", "44112", "44", "441112", "4412", "4412s", NULL,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	
 	"211", "24412s", NULL, NULL, NULL, NULL, NULL, NULL,
@@ -566,6 +567,42 @@ void net_handle_s2c(netpacket_t *pkt)
 			
 			map_pop_tile(client_map, x, y);
 		} break;
+		case PKT_BLOCK_SET_EXT: {
+			s32 x = *(s32 *)(&pkt->data[0]);
+			s32 y = *(s32 *)(&pkt->data[4]);
+			u8 uidx = *(u8 *)(&pkt->data[8]);
+			u8 type = *(u8 *)(&pkt->data[9]);
+			u8 col = *(u8 *)(&pkt->data[10]);
+			u16 chr = *(u16 *)(&pkt->data[11]);
+			
+			tile_t t;
+			
+			t.type = type;
+			t.col = col;
+			t.chr = chr;
+			t.under = NULL;
+			t.datalen = 0;
+			t.data = NULL;
+			
+			map_set_tile_ext(client_map, x, y, uidx, t);
+		} break;
+		case PKT_BLOCK_ALLOC_DATA: {
+			s32 x = *(s32 *)(&pkt->data[0]);
+			s32 y = *(s32 *)(&pkt->data[4]);
+			u8 uidx = *(u8 *)(&pkt->data[8]);
+			u16 datalen = *(u16 *)(&pkt->data[9]);
+			
+			map_alloc_tile_data(client_map, x, y, uidx, datalen);
+		} break;
+		case PKT_BLOCK_SET_DATA: {
+			s32 x = *(s32 *)(&pkt->data[0]);
+			s32 y = *(s32 *)(&pkt->data[4]);
+			u8 uidx = *(u8 *)(&pkt->data[8]);
+			u16 datapos = *(u16 *)(&pkt->data[9]);
+			u8 datalen = *(u16 *)(&pkt->data[11]);
+			
+			map_set_tile_data(client_map, x, y, uidx, datalen, datapos, &pkt->data[12]);
+		} break;
 		
 		case PKT_ENTITY_MOVEMENT: {
 			int id = *(u16 *)&pkt->data[0];
@@ -865,6 +902,12 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 					net_pack(server_players[i], PKT_BLOCK_POP,
 						x, y);
 		} break;
+		case PKT_BLOCK_SET_EXT:
+			break;
+		case PKT_BLOCK_ALLOC_DATA:
+			break;
+		case PKT_BLOCK_SET_DATA:
+			break;
 		
 		case PKT_ENTITY_MOVEMENT:
 			C2S_NEED_LOGIN;
@@ -1383,6 +1426,12 @@ void server_update()
 		// Assemble packets for the send queue.
 		net_send((np->sockfd >= -1 ? NULL : &net_player), np, 1);
 	}
+	
+	// Update some stuff!
+	handle_physics(server_map,
+		server_set_tile_ext_broadcast,
+		server_alloc_tile_data_broadcast,
+		server_set_tile_data_broadcast);
 }
 
 int net_init(char *addr, int port)

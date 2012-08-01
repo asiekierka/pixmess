@@ -45,7 +45,7 @@ layer_t *layer_new(int w, int h, int template)
 	layer_t *a = (layer_t *)malloc(sizeof(layer_t));
 	a->w = w;
 	a->h = h;
-	a->updmask = malloc((w+7)/8+h);
+	a->updmask = malloc(((w+31)/32)*h*4);
 	a->tiles = (tile_t *)malloc(sizeof(tile_t)*w*h);
 	int i;
 	
@@ -359,16 +359,16 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	p = 0;
 	for(i=0;i<layer->h;i++)
 	{
-		for(j=0;j<layer->w;j+=8)
+		for(j=0;j<layer->w;j+=32)
 		{
-			if(layer->updmask[p]>0)
+			if(layer->updmask[p] != 0)
 			{
-				for(k=0;k<8;k++)
+				for(k=0;k<32;k++)
 				{
 					if(((layer->updmask[p])>>k)&1)
 					{
 						*ux=j+k; *uy=i;
-						layer->updmask[p] &= 0xFF ^ (1<<k);
+						layer->updmask[p] &= ~(1<<k);
 						return 1;
 					}
 				}
@@ -618,6 +618,93 @@ void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 	mt->under = under;
 }
 
+void layer_set_tile_ext(u8 x, u8 y, u8 uidx, tile_t tile, layer_t *layer)
+{
+	// NOTE: preserve "under" reference!
+	tile_t *mt = layer_get_tile_ref(x, y, layer);
+	
+	// dig down
+	while(uidx-- > 0)
+	{
+		mt = mt->under;
+		if(mt == NULL)
+		{
+			fprintf(stderr, "ERROR: uidx too large!\n");
+			return;
+		}
+	}
+	
+	tile_t *under = mt->under;
+	*mt = tile;
+	mt->under = under;
+}
+
+void layer_set_tile_data(u8 x, u8 y, u8 uidx, u8 datalen, u8 datapos, u8 *data, layer_t *layer)
+{
+	tile_t *mt = layer_get_tile_ref(x, y, layer);
+	
+	// dig down
+	while(uidx-- > 0)
+	{
+		mt = mt->under;
+		if(mt == NULL)
+		{
+			fprintf(stderr, "ERROR: uidx too large!\n");
+			return;
+		}
+	}
+	
+	// do a pointer check
+	if(mt->data != NULL)
+	{
+		fprintf(stderr, "ERROR: tile data to write to is NULL!\n");
+		return;
+	}
+	
+	// do a range check
+	if(datalen == 0)
+	{
+		fprintf(stderr, "WARNING: data length to write is 0!\n");
+		return;
+	}
+	
+	if((s32)datapos + (s32)datalen > (s32)mt->datalen)
+	{
+		fprintf(stderr, "WARNING: tile data out of range!\n");
+		int xdatalen = (int)((s32)mt->datalen - (s32)datapos);
+		if(xdatalen <= 0)
+			return;
+		
+		datalen = (u32)xdatalen;
+	}
+	
+	// copy!
+	memcpy(&mt->data[datapos], data, datalen);
+}
+
+void layer_alloc_tile_data(u8 x, u8 y, u8 uidx, u16 datalen, layer_t *layer)
+{
+	tile_t *mt = layer_get_tile_ref(x, y, layer);
+	
+	// dig down
+	while(uidx-- > 0)
+	{
+		mt = mt->under;
+		if(mt == NULL)
+		{
+			fprintf(stderr, "ERROR: uidx too large!\n");
+			return;
+		}
+	}
+	
+	// allocate
+	mt->data = realloc(mt->data, (int)datalen);
+	mt->datalen = datalen;
+	
+	// clear data
+	memset(mt->data, 0, (int)datalen);
+}
+
 void layer_push_tile(u8 x, u8 y, tile_t tile, layer_t *layer)
 {
 	// get tile reference
@@ -701,6 +788,33 @@ void map_set_tile(map_t *map, s32 x, s32 y, tile_t tile)
 	layer_set_tile(absmod(x,chunk->w),absmod(y,chunk->h),tile,chunk);
 }
 
+void map_set_tile_ext(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile)
+{
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
+	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
+	if(chunk == NULL) return;
+	layer_set_tile_ext(absmod(x,chunk->w),absmod(y,chunk->h),uidx,tile,chunk);
+}
+
+void map_set_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u8 datalen, u8 datapos, u8 *data)
+{
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
+	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
+	if(chunk == NULL) return;
+	layer_set_tile_data(absmod(x,chunk->w),absmod(y,chunk->h),uidx,datalen,datapos,data,chunk);
+}
+
+void map_alloc_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u16 datalen)
+{
+	s32 chunk_x = divneg(x,LAYER_WIDTH);
+	s32 chunk_y = divneg(y,LAYER_HEIGHT);
+	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
+	if(chunk == NULL) return;
+	layer_alloc_tile_data(absmod(x,chunk->w),absmod(y,chunk->h),uidx,datalen,chunk);
+}
+
 void map_push_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
 	s32 chunk_x = divneg(x,LAYER_WIDTH);
@@ -719,17 +833,18 @@ void map_pop_tile(map_t *map, s32 x, s32 y)
 	layer_pop_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
 }
 
-u8 map_get_next_update(map_t *map, s32 *x, s32 *y)
+u8 map_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 {
 	int i;
 	u32 lx, ly;
 
 	// Finding all existing layers
-	for(i=0;i<map->layer_count;i++) {
+	for(i=*lidx;i<map->layer_count;i++) {
 		if(map->layers[i].data != NULL && layer_get_next_update(map->layers[i].data,&lx,&ly))
 		{
 			*x = map->layers[i].x*LAYER_WIDTH  + lx;
 			*y = map->layers[i].y*LAYER_HEIGHT + ly;
+			*lidx = i;
 			return 1;
 		}
 	}

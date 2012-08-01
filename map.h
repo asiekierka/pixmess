@@ -30,6 +30,10 @@ void map_set_tile(map_t *map, s32 x, s32 y, tile_t tile);
 void map_push_tile(map_t *map, s32 x, s32 y, tile_t tile);
 void map_pop_tile(map_t *map, s32 x, s32 y);
 
+void map_set_tile_ext(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile);
+void map_set_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u8 datalen, u8 datapos, u8 *data);
+void map_alloc_tile_data(map_t *map, s32 x, s32 y, u8 uidx, u16 datalen);
+
 tile_t *layer_get_tile_ref(u8 x, u8 y, layer_t *layer);
 tile_t layer_get_tile(u8 x, u8 y, layer_t *layer);
 void layer_set_tile(u8 x, u8 y, tile_t tile, layer_t *layer);
@@ -48,7 +52,7 @@ void map_save(map_t *map);
 
 u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy);
 void layer_set_update(layer_t *layer, u32 ux, u32 uy);
-u8 map_get_next_update(map_t *map, s32 *x, s32 *y);
+u8 map_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y);
 void map_set_update(map_t *map, s32 x, s32 y);
 
 extern map_t *client_map;
