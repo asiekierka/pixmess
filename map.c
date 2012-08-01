@@ -363,7 +363,7 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	u32 p;
 	
 	p = 0;
-	for(i=0;i<layer->h;i++)
+	for(i=*uy;i<layer->h;i++)
 	{
 		for(j=0;j<layer->w;j+=32)
 		{
@@ -394,11 +394,14 @@ void layer_switch_masks(layer_t *layer)
 	memset(layer->new_updmask,0x00,((layer->w+31)/32)*layer->h*4);
 };
 
-void layer_set_update(layer_t *layer, u32 ux, u32 uy)
+void layer_set_update(layer_t *layer, u32 ux, u32 uy, u8 tonew)
 {
 	u32 i = uy*((layer->w+31)/32) + (ux/32);
 	u8 k = ux & 31;
-	layer->new_updmask[i] |= 1<<k;
+	if(tonew)
+		layer->new_updmask[i] |= 1<<k;
+	else
+		layer->updmask[i] |= 1<<k;
 };
 
 map_t *map_new(u32 layercount)
@@ -868,13 +871,13 @@ u8 map_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 	return 0;
 }
 
-void map_set_update(map_t *map, s32 x, s32 y)
+void map_set_update(map_t *map, s32 x, s32 y, u8 tonew)
 {
 	s32 chunk_x = divneg(x,LAYER_WIDTH);
 	s32 chunk_y = divneg(y,LAYER_HEIGHT);
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
-	layer_set_update(chunk, absmod(x,chunk->w),absmod(y,chunk->h));
+	layer_set_update(chunk, absmod(x,chunk->w),absmod(y,chunk->h),tonew);
 }
 
 void map_init(void)

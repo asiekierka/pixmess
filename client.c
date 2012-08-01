@@ -108,17 +108,17 @@ u8 client_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 	return map_get_next_update(map, lidx, x, y);
 }
 
-void client_set_update(map_t *map, s32 x, s32 y)
+void client_set_update(map_t *map, s32 x, s32 y, u8 tonew)
 {
 	client_load_chunk(map, x, y);
-	map_set_update(map, x,y);
+	map_set_update(map, x,y, tonew);
 }
 
-void client_set_update_n(map_t *map, s32 x, s32 y)
+void client_set_update_n(map_t *map, s32 x, s32 y, u8 tonew)
 {
-	client_set_update(map,x,y);
-	client_set_update(map,x-1,y);
-	client_set_update(map,x+1,y);
-	client_set_update(map,x,y-1);
-	client_set_update(map,x,y+1);
+	client_set_update(map,x,y,tonew);
+	client_set_update(map,x-1,y,tonew);
+	client_set_update(map,x+1,y,tonew);
+	client_set_update(map,x,y-1,tonew);
+	client_set_update(map,x,y+1,tonew);
 }

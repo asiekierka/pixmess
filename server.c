@@ -91,17 +91,17 @@ u8 server_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 	return map_get_next_update(server_map,lidx,x,y);
 }
 
-void server_set_update(map_t *map, s32 x, s32 y)
+void server_set_update(map_t *map, s32 x, s32 y, u8 tonew)
 {
 	server_load_chunk(map, x, y);
-	map_set_update(map,x,y);
+	map_set_update(map,x,y,tonew);
 }
 
-void server_set_update_n(map_t *map, s32 x, s32 y)
+void server_set_update_n(map_t *map, s32 x, s32 y, u8 tonew)
 {
-	server_set_update(map,x,y);
-	server_set_update(map,x-1,y);
-	server_set_update(map,x+1,y);
-	server_set_update(map,x,y-1);
-	server_set_update(map,x,y+1);
+	server_set_update(map,x,y,tonew);
+	server_set_update(map,x-1,y,tonew);
+	server_set_update(map,x+1,y,tonew);
+	server_set_update(map,x,y-1,tonew);
+	server_set_update(map,x,y+1,tonew);
 }

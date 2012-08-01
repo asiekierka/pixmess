@@ -16,10 +16,10 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			if(is_server)
 			{
 				printf("LOLWIRE\n");
-				tile->col ^= 0x08;
+				tile->col++;
 				map->f_set_tile_ext(map, x, y, uidx,
 					*tile, 1);
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+				return HPT_RET_UPDATE_SELF;
 			}
 			break;
 	}
@@ -41,6 +41,7 @@ void handle_physics(map_t *map)
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
+		if(is_server) printf("Got update on %d,%d",x,y);
 		changes++;
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);
@@ -53,18 +54,18 @@ void handle_physics(map_t *map)
 			if(tile_active(new_tile))
 			{
 				int handle_ret = handle_physics_tile(map, x, y, &new_tile, uidx);
-				x++;
 				switch(handle_ret)
 				{
 					default:
 						break;
 					case HPT_RET_UPDATE_SELF:
-						map->f_set_update(map,x,y);
+						map->f_set_update(map,x,y,1);
 						break;
 					case HPT_RET_UPDATE_SELF_AND_NEIGHBORS:
-						map->f_set_update_n(map,x,y);
+						map->f_set_update_n(map,x,y,1);
 						break;
 				}
+				x++;
 			}			
 			tile = tile->under;
 			uidx++;
@@ -76,6 +77,5 @@ void handle_physics(map_t *map)
 			}
 		}
 	}
-
-	if(changes>0) map_switch_masks(map);
+	map_switch_masks(map);
 }

@@ -127,19 +127,19 @@ void mouse_placement()
 	if(pressing_0 && (lastx != bx || lasty != by || !pressed_0))
 	{
 		client_map->f_push_tile(client_map,bx,by,*ui_get_tile());
-		client_map->f_set_update_n(client_map,bx,by);
+		client_map->f_set_update_n(client_map,bx,by,0);
 	}
 	else if(pressing_1 && (lastx != bx || lasty != by || !pressed_1))
 	{
 		tile_t *tile = ui_get_tile();
 		tile_t map_tile = client_map->f_get_tile(client_map, bx, by);
 		memcpy(tile,&map_tile,sizeof(tile_t));
-		client_map->f_set_update_n(client_map,bx,by);
+		client_map->f_set_update_n(client_map,bx,by,0);
 	}
 	else if(pressing_2 && (lastx != bx || lasty != by || !pressed_2))
 	{
 		client_map->f_pop_tile(client_map,bx,by);
-		client_map->f_set_update_n(client_map,bx,by);
+		client_map->f_set_update_n(client_map,bx,by,0);
 	}
 	
 	pressed_0 = pressing_0;
