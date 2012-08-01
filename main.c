@@ -259,6 +259,8 @@ int main(int argc, char *argv[])
 			
 		frame_counter++;
 
+		handle_physics(client_map);
+
 		// constant ~30FPS, rule from old 64pixels
 		// TODO: get this to 33ms rather than 30ms
 		// -- SDL_Delay only goes up in 10ms increments --GM
@@ -277,7 +279,6 @@ int main(int argc, char *argv[])
 			sfp_delay(10);
 		}
 
-		handle_physics(client_map);
 		if(is_server) handle_physics(server_map);
 		
 		sfp_event_tick();

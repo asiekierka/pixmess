@@ -20,12 +20,12 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 	{
 		case TILE_WIRE:
 			// TEST: flip light for serverside
-			if(is_server)
+			if(!is_server)
 			{
 				printf("LOLWIRE\n");
 				tile->col++;
 				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, 1);
+					*tile, is_server);
 				return HPT_RET_UPDATE_SELF;
 			}
 			break;
@@ -48,7 +48,7 @@ void handle_physics(map_t *map)
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
-		if(is_server) printf("Got update on %d,%d",x,y);
+		// if(!is_server) printf("Got update on %d,%d",x,y);
 		changes++;
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);

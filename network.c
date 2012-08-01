@@ -502,6 +502,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			// IT WILL SEND THE SET MESSAGE STRAIGHT BACK TO THE SERVER!!!
 			//     --GM
 			map_set_tile(client_map, x, y, t);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_PUSH: {
 			s32 x = *(s32 *)(&pkt->data[0]);
@@ -520,12 +521,14 @@ void net_handle_s2c(netpacket_t *pkt)
 			t.data = NULL;
 			
 			map_push_tile(client_map, x, y, t);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_POP: {
 			s32 x = *(s32 *)(&pkt->data[0]);
 			s32 y = *(s32 *)(&pkt->data[4]);
 			
 			map_pop_tile(client_map, x, y);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_SET_EXT: {
 			s32 x = *(s32 *)(&pkt->data[0]);
@@ -545,6 +548,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			t.data = NULL;
 			
 			map_set_tile_ext(client_map, x, y, uidx, t);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_ALLOC_DATA: {
 			s32 x = *(s32 *)(&pkt->data[0]);
@@ -553,6 +557,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			u16 datalen = *(u16 *)(&pkt->data[9]);
 			
 			map_alloc_tile_data(client_map, x, y, uidx, datalen);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_SET_DATA: {
 			s32 x = *(s32 *)(&pkt->data[0]);
@@ -562,6 +567,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			u8 datalen = *(u16 *)(&pkt->data[11]);
 			
 			map_set_tile_data(client_map, x, y, uidx, datalen, datapos, &pkt->data[12]);
+			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		
 		case PKT_ENTITY_MOVEMENT: {
