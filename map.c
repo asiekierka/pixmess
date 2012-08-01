@@ -114,7 +114,11 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	u16 s1;
 	
 	// create a temp file
+#ifdef WIN32
+	FILE *fp = fopen("windows.sucks.tmp","wb");
+#else
 	FILE *fp = tmpfile();
+#endif
 	
 	if(fp == NULL)
 		return NULL;
@@ -185,12 +189,16 @@ u8 *layer_serialise(layer_t *layer, int *rawlen, int *cmplen)
 	}
 	
 	// very rare case of me checking the return value of fread --GM
+#ifdef WIN32
+	fread(buf_raw, *rawlen, 1, fp);
+#else
 	if(fread(buf_raw, *rawlen, 1, fp) != 1)
 	{
 		fprintf(stderr, "FATAL: YOUR OS SUCKS\n");
 		perror("layer_serialise");
 		abort(); // die badly - this should NEVER happen!
 	}
+#endif
 	
 	// construct compress buffer
 	// length calculation is based on the max size of a "store" block
@@ -248,7 +256,7 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 	// load the header
 	if(*(u32 *)v != (u32)0x1A571ECE)
 	{
-		fprintf(stderr, "ERROR: incorrect magic number\n");
+		fprintf(stderr, "ERROR: incorrect magic number %08X\n", *(u32 *)v);
 		free(buf_raw);
 		return NULL;
 	}

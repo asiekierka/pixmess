@@ -11,6 +11,7 @@
 #define MSG_DONTWAIT 0
 #define SHUT_RDWR SD_BOTH
 #define socklen_t int
+WSADATA wsaihateyou;
 #endif
 
 // some delicious strings
@@ -1098,10 +1099,14 @@ void net_recv(netplayer_t *np)
 			NET_MTU-np->pkt_buf_pos,
 			MSG_DONTWAIT);
 		
-		if(rcount == -1)
+		if(rcount <= -1)
 		{
+#ifdef WIN32
+			if(rcount != WSAEWOULDBLOCK)
+#else
 			int err = errno;
 			if(err != EAGAIN)
+#endif
 			{
 				perror("net_recv");
 				// TODO: disconnect gracefully!
@@ -1432,6 +1437,23 @@ int net_init(char *addr, int port)
 	
 	if(net_initialised)
 		return 0;
+	
+#ifdef WIN32
+	// WINSOCK SUCKS, ONCE AGAIN
+	// NO I AM NOT CLEANING UP
+	if(WSAStartup(MAKEWORD(1,1), &wsaihateyou))
+	{
+		fprintf(stderr, "ERROR: Winsock decided to suck\n");
+		// Let's divide by zero and then if that fails attempt to segfault
+		int qp = 0;
+		int qc = qp++;
+		int *z = (void *)qc;
+		int f = qc / qp;
+		int g = *z;
+		printf("YOU SHOULD NOT SEE THIS: %i %i\n", f, g);
+		abort();
+	}
+#endif
 	
 	// Prepare the client stuff
 	net_id = PLAYER_NONE;
