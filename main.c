@@ -163,6 +163,7 @@ int main(int argc, char *argv[])
 	char *net_addr = NULL;
 	int net_port = 0;
 
+	int is_server = 0;
 	int no_display = 0;
 	int no_self_player = 0;
 	
@@ -176,9 +177,11 @@ int main(int argc, char *argv[])
 	switch(argc-1)
 	{
 		case 0:
+			is_server = 1;
 			break;
 		case 1:
 			net_port = atoi(argv[1]);
+			is_server = 1;
 			break;
 		case 2:
 			net_port = atoi(argv[2]);
@@ -188,6 +191,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
+				is_server = 1;
 				no_display = 1;
 				no_self_player = 1;
 			}
@@ -274,6 +278,7 @@ int main(int argc, char *argv[])
 		}
 
 		handle_physics(client_map);
+		if(is_server) handle_physics(server_map);
 		
 		sfp_event_tick();
 	}

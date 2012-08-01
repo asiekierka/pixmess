@@ -826,6 +826,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 				if(server_players[i] != NULL)
 					net_pack(server_players[i], PKT_BLOCK_SET,
 						x, y, t.type, t.col, t.chr);
+			server_map->f_set_update_n(server_map, x, y);
 		} break;
 		case PKT_BLOCK_PUSH: {
 			C2S_NEED_LOGIN;
@@ -849,6 +850,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 				if(server_players[i] != NULL)
 					net_pack(server_players[i], PKT_BLOCK_PUSH,
 						x, y, t.type, t.col, t.chr);
+			server_map->f_set_update_n(server_map, x, y);
 		} break;
 		case PKT_BLOCK_POP: {
 			C2S_NEED_LOGIN;
@@ -861,6 +863,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 				if(server_players[i] != NULL)
 					net_pack(server_players[i], PKT_BLOCK_POP,
 						x, y);
+			server_map->f_set_update_n(server_map, x, y);
 		} break;
 		case PKT_BLOCK_SET_EXT:
 			break;

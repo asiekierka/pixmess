@@ -12,13 +12,13 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 	switch(tile->type)
 	{
 		case TILE_WIRE:
-			// TEST: flip light for clientside
-			if(!is_server)
+			// TEST: flip light for serverside
+			if(is_server)
 			{
 				printf("LOLWIRE\n");
 				tile->col ^= 0x08;
 				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, 0);
+					*tile, 1);
 			}
 			break;
 	}
@@ -28,15 +28,18 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 
 void handle_physics(map_t *map)
 {
+	if(map == NULL) return;
+
 	s32 x, y;
 	int lidx = 0;
 	tile_t *tile;
 	u8 uidx;
+	int is_server = (map == server_map);
 	
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
-		printf("Got an update on %d,%d\n",x,y);
+		if(is_server) printf("Got an update on %d,%d\n",x,y);
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);
 		uidx = 0;
