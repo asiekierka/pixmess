@@ -9,6 +9,10 @@
 #include <errno.h>
 #include <assert.h>
 
+#ifdef MINGW
+#include <signal.h>
+#endif
+
 #include <zlib.h>
 
 #include "types.h"
