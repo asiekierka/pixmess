@@ -19,12 +19,15 @@ void server_set_tile(s32 x, s32 y, tile_t tile)
 	map_set_tile(server_map,x,y,tile);
 }
 
-void server_set_tile_ext_broadcast(s32 x, s32 y, u8 uidx, tile_t tile)
+void server_set_tile_ext(s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
 {
 	int i;
 	
 	server_load_chunk(x,y);
 	map_set_tile_ext(server_map,x,y,uidx,tile);
+	
+	if(!sendflag)
+		return;
 	
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)
@@ -33,12 +36,15 @@ void server_set_tile_ext_broadcast(s32 x, s32 y, u8 uidx, tile_t tile)
 				tile.type, tile.col, tile.chr);
 }
 
-void server_alloc_tile_data_broadcast(s32 x, s32 y, u8 uidx, u16 datalen)
+void server_alloc_tile_data(s32 x, s32 y, u8 uidx, u16 datalen, int sendflag)
 {
 	int i;
 	
 	server_load_chunk(x,y);
 	map_alloc_tile_data(server_map,x,y,uidx,datalen);
+	
+	if(!sendflag)
+		return;
 	
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)
@@ -46,12 +52,15 @@ void server_alloc_tile_data_broadcast(s32 x, s32 y, u8 uidx, u16 datalen)
 				x,y,uidx,datalen);
 }
 
-void server_set_tile_data_broadcast(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data)
+void server_set_tile_data(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag)
 {
 	int i;
 	
 	server_load_chunk(x,y);
 	map_alloc_tile_data(server_map,x,y,uidx,datalen);
+	
+	if(!sendflag)
+		return;
 	
 	for(i = 0; i < server_player_top; i++)
 		if(server_players[i] != NULL)

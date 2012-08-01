@@ -1,3 +1,4 @@
+#include "client.h"
 #include "common.h"
 #include "map.h"
 #include "network.h"
@@ -1330,6 +1331,13 @@ void net_update()
 	
 	// Assemble packets for the send queue.
 	net_send(np, &net_player, 0);
+	
+	// Update some stuff!
+	handle_physics(client_map,
+		client_get_tile,
+		client_set_tile_ext,
+		client_alloc_tile_data,
+		client_set_tile_data);
 }
 
 void server_update()
@@ -1429,9 +1437,10 @@ void server_update()
 	
 	// Update some stuff!
 	handle_physics(server_map,
-		server_set_tile_ext_broadcast,
-		server_alloc_tile_data_broadcast,
-		server_set_tile_data_broadcast);
+		server_get_tile,
+		server_set_tile_ext,
+		server_alloc_tile_data,
+		server_set_tile_data);
 }
 
 int net_init(char *addr, int port)

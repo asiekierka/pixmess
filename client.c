@@ -18,22 +18,31 @@ void client_set_tile(s32 x, s32 y, tile_t tile)
 	net_block_set(x, y, tile);
 }
 
-void client_set_tile_ext_local(s32 x, s32 y, u8 uidx, tile_t tile)
+void client_set_tile_ext(s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
 {
 	client_load_chunk(x,y);
-	map_set_tile_ext(client_map, x, y, uidx, tile);
+	if(sendflag)
+		/* TODO! */;
+	else
+		map_set_tile_ext(client_map, x, y, uidx, tile);
 }
 
-void client_alloc_tile_data_local(s32 x, s32 y, u8 uidx, u16 datalen)
+void client_alloc_tile_data(s32 x, s32 y, u8 uidx, u16 datalen, int sendflag)
 {
 	client_load_chunk(x,y);
-	map_alloc_tile_data(client_map, x, y, uidx, datalen);
+	if(sendflag)
+		/* TODO! */;
+	else
+		map_alloc_tile_data(client_map, x, y, uidx, datalen);
 }
 
-void client_set_tile_data_local(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data)
+void client_set_tile_data(s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag)
 {
 	client_load_chunk(x,y);
-	map_set_tile_data(client_map, x, y, uidx, datalen, datapos, data);
+	if(sendflag)
+		/* TODO! */;
+	else
+		map_set_tile_data(client_map, x, y, uidx, datalen, datapos, data);
 }
 
 tile_t client_get_tile(s32 x, s32 y)

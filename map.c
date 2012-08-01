@@ -46,6 +46,8 @@ layer_t *layer_new(int w, int h, int template)
 	a->w = w;
 	a->h = h;
 	a->updmask = malloc(((w+31)/32)*h*4);
+	memset(a->updmask,0xFF,((w+31)/32)*h*4); // FIXME: check for widths not divisible by 32
+	
 	a->tiles = (tile_t *)malloc(sizeof(tile_t)*w*h);
 	int i;
 	
@@ -355,15 +357,15 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	u32 j;
 	u8 k;
 	u32 p;
-
+	
 	p = 0;
-	for(i=0;i<layer->h;i++)
+	for(i=*uy;i<layer->h;i++)
 	{
-		for(j=0;j<layer->w;j+=32)
+		for(j=*ux&~31;j<layer->w;j+=32)
 		{
 			if(layer->updmask[p] != 0)
 			{
-				for(k=0;k<32;k++)
+				for(k=*ux&31;k<32;k++)
 				{
 					if(((layer->updmask[p])>>k)&1)
 					{
