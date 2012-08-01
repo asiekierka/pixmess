@@ -119,13 +119,25 @@ void verify_tile()
 	u8 tofix;
 	u16 ac_length;
 	u16* allowed_chars = tile_get_allowed_chars(*drawing_tile,&ac_length);
+	u32 allowed_colors = tile_get_allowed_colors(*drawing_tile);
+
 	assert(ac_length>0);
 	u16 i;
 	tofix=1;
 	for(i=0;i<ac_length;i++)
 		if(allowed_chars[i] == drawing_tile->chr) tofix=0;
 	if(tofix==1) drawing_tile->chr = allowed_chars[0];
-	tofix=1;
+	
+	int dtbg = drawing_tile->col>>4;
+	int dtfg = drawing_tile->col&15;
+	if(!TILE_ALLOWED_BG(dtbg,allowed_colors))
+		for(i=0;i<16;i++)
+			if(TILE_ALLOWED_BG(i,allowed_colors)) { dtbg = i; break; }
+	
+	if(!TILE_ALLOWED_FG(dtfg,allowed_colors))
+		for(i=0;i<16;i++)
+			if(TILE_ALLOWED_FG(i,allowed_colors)) { dtfg = i; break; }
+	drawing_tile->col = ((dtbg&15)<<4)|(dtfg&15);
 }
 
 void render_type_window(void)
@@ -211,6 +223,7 @@ void render_color_window(void)
 	int lmb = sfp_event_mouse_button(0);
 	int mousex = sfp_event_mouse_x();
 	int mousey = sfp_event_mouse_y();
+	u32 allowed_colors = tile_get_allowed_colors(*drawing_tile);
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-66,208,66,0x000000);
 	// Drawing
@@ -221,21 +234,28 @@ void render_color_window(void)
 	u8 tbg = drawing_tile->col>>4;
 	for(i=0;i<16;i++)
 	{
-		sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-20+1,10,10,sfp_get_palette(i));
-		sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-48+1,10,10,sfp_get_palette(i));
-		if(i==0 || sfp_get_palette(i)==0x000000)
+		if(TILE_ALLOWED_BG(i,allowed_colors))
 		{
-			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-20,12,12,0x555555);
-			sfp_draw_rect(8,SFP_FIELD_HEIGHT*16-48,12,12,0x555555);
+			sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-20+1,10,10,sfp_get_palette(i));
+
+			if(i==0 || sfp_get_palette(i)==0x000000)
+				sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12,0x555555);
+			if(i==tbg)
+				sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12,0xCCCCCC);
+			if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12) && lmb)
+				tbg = i;
 		}
-		if(i==tfg)
-			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0xCCCCCC);
-		if(i==tbg)
-			sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12,0xCCCCCC);
-		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12) && lmb)
-			tfg = i;
-		if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-20,12,12) && lmb)
-			tbg = i;
+		if(TILE_ALLOWED_FG(i,allowed_colors))
+		{
+			sfp_fill_rect(8+(i*12)+1,SFP_FIELD_HEIGHT*16-48+1,10,10,sfp_get_palette(i));
+
+			if(i==0 || sfp_get_palette(i)==0x000000)
+				sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0x555555);
+			if(i==tfg)
+				sfp_draw_rect(8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12,0xCCCCCC);
+			if(inside_rect(mousex,mousey,8+(i*12),SFP_FIELD_HEIGHT*16-48,12,12) && lmb)
+				tfg = i;
+		}
 	}
 	drawing_tile->col = (tbg<<4)|tfg;
 	verify_tile();

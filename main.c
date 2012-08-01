@@ -252,7 +252,8 @@ int main(int argc, char *argv[])
 				if(movement_wait>0) movement_wait--;
 			}
 			
-			sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
+			if(!ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y()))
+				sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
 			
 			sfp_render_end();
 		}
