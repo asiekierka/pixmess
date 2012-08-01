@@ -361,15 +361,15 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	u32 p;
 	
 	p = 0;
-	for(i=*uy;i<layer->h;i++)
+	for(i=0;i<layer->h;i++)
 	{
-		for(j=*ux&~31;j<layer->w;j+=32)
+		for(j=0;j<layer->w;j+=32)
 		{
 			if(layer->updmask[p] != 0)
 			{
-				for(k=*ux&31;k<32;k++)
+				for(k=0;k<32;k++)
 				{
-					if(((layer->updmask[p])>>k)&1)
+					if((((layer->updmask[p])>>k)&1)==1)
 					{
 						*ux=j+k; *uy=i;
 						layer->updmask[p] &= ~(1<<k);
@@ -832,6 +832,8 @@ u8 map_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 {
 	int i;
 	u32 lx, ly;
+	lx = 0;
+	ly = 0;
 
 	// Finding all existing layers
 	for(i=*lidx;i<map->layer_count;i++) {
