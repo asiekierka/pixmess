@@ -9,6 +9,13 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 	// assuming map != NULL
 	int is_server = (map == server_map);
 	
+	// time to get the neighbors
+	static tile_t ntiles[4]; // less waste on the memory
+	ntiles[0] = map->f_get_tile(map,x,y-1);
+	ntiles[1] = map->f_get_tile(map,x,y+1);
+	ntiles[2] = map->f_get_tile(map,x+1,y);
+	ntiles[3] = map->f_get_tile(map,x-1,y);
+
 	switch(tile->type)
 	{
 		case TILE_WIRE:
