@@ -100,7 +100,10 @@ struct map
 	void (*f_set_tile_ext)(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile, int sendflag);
 	void (*f_alloc_tile_data)(map_t *map, s32 x, s32 y, u8 uidx, u16 datalen, int sendflag);
 	void (*f_set_tile_data)(map_t *map, s32 x, s32 y, u8 uidx, u8 datalen, u16 datapos, u8 *data, int sendflag);
-	
+	u8 (*f_get_next_update)(map_t *map, int *lidx, s32 *x, s32 *y);
+	void (*f_set_update)(map_t *map, s32 x, s32 y);
+	void (*f_set_update_n)(map_t *map, s32 x, s32 y);
+
 	int layer_count;
 	layerinfo_t layers[];
 };

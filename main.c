@@ -6,6 +6,7 @@ remember to do it often, or everything will turn to crap!
     --GM
 */
 
+#include "client.h"
 #include "common.h"
 #include "event.h"
 #include "interface.h"
@@ -13,6 +14,7 @@ remember to do it often, or everything will turn to crap!
 #include "map.h"
 #include "misc.h"
 #include "network.h"
+#include "physics.h"
 #include "player.h"
 #include "render.h"
 #include "tile.h"
@@ -125,16 +127,19 @@ void mouse_placement()
 	if(pressing_0 && (lastx != bx || lasty != by || !pressed_0))
 	{
 		client_map->f_push_tile(client_map,bx,by,*ui_get_tile());
+		client_map->f_set_update_n(client_map,bx,by);
 	}
 	else if(pressing_1 && (lastx != bx || lasty != by || !pressed_1))
 	{
 		tile_t *tile = ui_get_tile();
 		tile_t map_tile = client_map->f_get_tile(client_map, bx, by);
 		memcpy(tile,&map_tile,sizeof(tile_t));
+		client_map->f_set_update_n(client_map,bx,by);
 	}
 	else if(pressing_2 && (lastx != bx || lasty != by || !pressed_2))
 	{
 		client_map->f_pop_tile(client_map,bx,by);
+		client_map->f_set_update_n(client_map,bx,by);
 	}
 	
 	pressed_0 = pressing_0;
@@ -267,6 +272,8 @@ int main(int argc, char *argv[])
 			// sleepage
 			sfp_delay(10);
 		}
+
+		handle_physics(client_map);
 		
 		sfp_event_tick();
 	}

@@ -36,7 +36,7 @@ void handle_physics(map_t *map)
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
-		//printf("Got an update on %d,%d\n",x,y);
+		printf("Got an update on %d,%d\n",x,y);
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);
 		uidx = 0;

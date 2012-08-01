@@ -105,11 +105,20 @@ void client_pop_tile(map_t *map, s32 x, s32 y)
 
 u8 client_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
 {
-	return map_get_next_update(client_map, lidx, x, y);
+	return map_get_next_update(map, lidx, x, y);
 }
 
 void client_set_update(map_t *map, s32 x, s32 y)
 {
 	client_load_chunk(map, x, y);
-	map_set_update(client_map, x,y);
+	map_set_update(map, x,y);
+}
+
+void client_set_update_n(map_t *map, s32 x, s32 y)
+{
+	client_set_update(map,x,y);
+	client_set_update(map,x-1,y);
+	client_set_update(map,x+1,y);
+	client_set_update(map,x,y-1);
+	client_set_update(map,x,y+1);
 }

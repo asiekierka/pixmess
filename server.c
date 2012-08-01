@@ -96,3 +96,12 @@ void server_set_update(map_t *map, s32 x, s32 y)
 	server_load_chunk(map, x, y);
 	map_set_update(map,x,y);
 }
+
+void server_set_update_n(map_t *map, s32 x, s32 y)
+{
+	server_set_update(map,x,y);
+	server_set_update(map,x-1,y);
+	server_set_update(map,x+1,y);
+	server_set_update(map,x,y-1);
+	server_set_update(map,x,y+1);
+}

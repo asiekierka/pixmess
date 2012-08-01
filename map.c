@@ -868,7 +868,10 @@ void map_init(void)
 	client_map->f_set_tile_ext = client_set_tile_ext;
 	client_map->f_alloc_tile_data = client_alloc_tile_data;
 	client_map->f_set_tile_data = client_set_tile_data;
-	
+	client_map->f_get_next_update = client_get_next_update;
+	client_map->f_set_update = client_set_update;
+	client_map->f_set_update_n = client_set_update_n;
+
 	server_map->f_get_tile = server_get_tile;
 	server_map->f_set_tile = server_set_tile;
 	server_map->f_push_tile = server_push_tile;
@@ -876,7 +879,10 @@ void map_init(void)
 	server_map->f_set_tile_ext = server_set_tile_ext;
 	server_map->f_alloc_tile_data = server_alloc_tile_data;
 	server_map->f_set_tile_data = server_set_tile_data;
-	
+	server_map->f_get_next_update = server_get_next_update;
+	server_map->f_set_update = server_set_update;
+	server_map->f_set_update_n = server_set_update_n;
+
 	client_map->fpath = "xmap/";
 	server_map->fpath = "svmap/";
 }
