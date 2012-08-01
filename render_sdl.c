@@ -130,7 +130,7 @@ int sfp_render_init_video()
 {
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_NOPARACHUTE))
 		return sfp_sdl_error("SDL_Init"); // asie this would be a better idea --GM
-	SDL_WM_SetCaption("c64pixels v0.-1", NULL);
+	SDL_WM_SetCaption("pixmess v0.-1", NULL);
 	
 	screen = SDL_SetVideoMode(
 		SFP_SCREEN_WIDTH*16,

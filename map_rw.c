@@ -12,7 +12,11 @@ void mkdir_if_none(char* path)
 {
 	// I'm an asshat.
 	// note, all dirs need the execute flag set to be accessible --GM
-	mkdir(path ,S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#ifdef WIN32
+	mkdir(path);
+#else
+	mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+#endif
 }
 
 // PLEASE FREE THE PATH YOU GET WHEN YOU'RE DONE WITH IT. --GM
@@ -21,9 +25,9 @@ char* layer_rw_path(map_t *map, s32 x, s32 y)
 	// TODO: get correct path separator, somehow
 	char* path1 = malloc(sizeof(char)*512);
 	mkdir_if_none(map->fpath);
-	snprintf(path1, 511, "%s/%d",map->fpath,y);
+	snprintf(path1, 511, "%s%s%d",map->fpath,PATHSEP,y);
 	mkdir_if_none(path1);
-	snprintf(path1, 511, "%s/%d/%d.cnk",map->fpath,y,x);
+	snprintf(path1, 511, "%s%s%d%s%d.cnk",map->fpath,PATHSEP,y,PATHSEP,x);
 	
 	return path1;
 }

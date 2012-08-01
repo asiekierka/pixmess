@@ -220,7 +220,9 @@ int main(int argc, char *argv[])
 	
 	movement_wait = 0;
 	
+#ifndef WIN32
 	signal(SIGINT, sighdl_closenicely);
+#endif
 	
 	if(!no_self_player) net_login(0x1F, 0x0002, "Gamemaster");
 	

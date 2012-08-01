@@ -6,6 +6,13 @@
 #include "player.h"
 #include "server.h"
 
+#ifdef WIN32
+#define close closesocket
+#define MSG_DONTWAIT 0
+#define SHUT_RDWR SD_BOTH
+#define socklen_t int
+#endif
+
 // some delicious strings
 char *net_pktstr_c2s[128] = {
 	NULL, "44112", "44112", "44", "441112", "4412", "4412s", NULL,
@@ -1087,7 +1094,7 @@ void net_recv(netplayer_t *np)
 	if(np->sockfd >= 0)
 	for(;;)
 	{
-		int rcount = recv(np->sockfd, &np->pkt_buf[np->pkt_buf_pos],
+		int rcount = recv(np->sockfd, (char *)&np->pkt_buf[np->pkt_buf_pos],
 			NET_MTU-np->pkt_buf_pos,
 			MSG_DONTWAIT);
 		
@@ -1239,7 +1246,7 @@ void net_send(netplayer_t *np_to, netplayer_t *np_from, int is_server)
 		
 		if(buf_pos != 0)
 		{
-			int amt = send(sockfd, buf, buf_pos, 0);
+			int amt = send(sockfd, (char *)buf, buf_pos, 0);
 			if(amt != buf_pos)
 			{
 				if(amt == -1)
@@ -1318,6 +1325,17 @@ void server_update()
 	// TODO: remove old connections eventually!
 	if(server_sockfd >= 0)
 	{
+#ifdef WIN32
+		// WINSOCK SUCKS
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(server_sockfd, &fds);
+		struct timeval timeout;
+		timeout.tv_sec = 0;
+		timeout.tv_usec = 0;
+		select(server_sockfd+1, &fds, NULL, NULL, &timeout);
+		if(FD_ISSET(server_sockfd, &fds))
+#else
 		struct pollfd pfd;
 		pfd.fd = server_sockfd;
 		pfd.events = POLLIN;
@@ -1325,6 +1343,7 @@ void server_update()
 		
 		poll(&pfd, 1, 0);
 		if(pfd.revents & POLLIN)
+#endif
 		{
 			struct sockaddr_in sa;
 			socklen_t sa_len = sizeof(sa);
@@ -1334,6 +1353,10 @@ void server_update()
 				fprintf(stderr, "ERROR: accept failed\n");
 				perror("server_update");
 			} else {
+#ifdef WIN32
+				u_long mode = 1;
+				ioctlsocket(csockfd, FIONBIO, &mode);
+#endif
 				// TODO: use this info!
 				printf("%08X -> port %i connected!\n",
 					sa.sin_addr.s_addr, sa.sin_port);
@@ -1460,7 +1483,7 @@ int net_init(char *addr, int port)
 				return 1;
 			}
 			
-			if(bind(server_sockfd, &sa, sizeof(sa)))
+			if(bind(server_sockfd, (struct sockaddr *)&sa, sizeof(sa)))
 			{
 				fprintf(stderr, "ERROR: could not bind server socket!\n");
 				perror("net_init");
@@ -1522,7 +1545,7 @@ int net_init(char *addr, int port)
 			return 1;
 		}
 		
-		if(connect(net_player.sockfd, &sa, sizeof(sa)))
+		if(connect(net_player.sockfd, (struct sockaddr *)&sa, sizeof(sa)))
 		{
 			fprintf(stderr, "ERROR: could not connect to server!\n");
 			perror("net_init");
@@ -1537,11 +1560,18 @@ int net_init(char *addr, int port)
 			
 			return 1;
 		}
+		
+#ifdef WIN32
+		u_long mode = 1;
+		ioctlsocket(net_player.sockfd, FIONBIO, &mode);
+#endif
 	}
 	
 	// STOP IT FROM KILLING THE PROGRAM ON A BROKEN PIPE.
 	// Broken pipes happen! LOTS!
+#ifndef WIN32
 	signal(SIGPIPE, SIG_IGN);
+#endif
 	
 	for(i = 0; i < 65536; i++)
 		server_players[i] = NULL;

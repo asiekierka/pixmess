@@ -2,8 +2,10 @@
 # TODO: provide an optional MinGW set of... things
 # (hint: -static-libgcc will be helpful here!)
 #
-# OK, this is my commandline... --GM
-# make CC=i686-pc-mingw32-gcc CFLAGS=-I/usr/i686-pc-mingw32/sys-root/mingw/include/SDL/ BINNAME=c64pixels.exe
+# OK, this is my commandline...
+# make CC=i686-pc-mingw32-gcc BINNAME=pixmess.exe CFLAGS="-Iluainc -Isdlinc -D_GNU_SOURCE=1 -Dmain=SDL_main -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter" LIBS="-L. -lmingw32 -lSDLmain -lSDL -lz -llua -lwsock32"
+# Yes, I have copied the lua/SDL/zlib stuff into dirs.
+# --GM
 
 LIBS = `sdl-config --libs` -lz -llua
 CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable $(CFLAGS_EXTRA)

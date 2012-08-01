@@ -5,7 +5,11 @@
 
 #define MAP_MAX_SIZE 262144 // 256KB should be enough for anyone.
 #define MAP_RW_DIR "pm-map"
-#define DIR_DELIM "/"
+#ifdef WIN32
+#define PATHSEP "\\"
+#else
+#define PATHSEP "/"
+#endif
 
 #define LAYER_VERSION 1
 #define LAYER_LOWEST_VERSION 1

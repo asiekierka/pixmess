@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#ifdef MINGW
+#ifndef WIN32
 #include <signal.h>
 #endif
 
