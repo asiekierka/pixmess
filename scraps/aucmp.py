@@ -1,4 +1,4 @@
-# ADPWM codec - Reference Implementation
+# DFPWM (Dynamic Filter Pulse Width Modulation) codec - Reference Implementation
 # by Ben "GreaseMonkey" Russell, 2012
 # Public Domain
 
@@ -51,15 +51,52 @@ Encoding information:
 The 1-bit stream is packed little-endian: LSB first, MSB last.
 ...that's all you need to know really.
 
+Filtering information:
+Let f be the playback frequency.
+You will get a ~f/2Hz whine unless you Filter That Crap Out.
+
+I compared the codec for Queen's "Tie Your Mother Down" at 8000Hz,
+and the main difference was that the original was less... pointy.
+
+Tried at 44100Hz and the noise issue was clearer
+-- it was definitely doing some up/down crap.
+
+My recommendation is this:
+	Track the last two samples.
+	If you are going in same direction as the last sample,
+		set the output sample to the current sample.
+	Otherwise
+		set the output sample to the average of
+		the previous two samples.
+	
+Another thing you might like to try, which may be better:
+	Track the last two samples.
+	If you are going in same direction as the last sample,
+		set the output sample to the current sample.
+	Otherwise, if you are going towards the centre,
+		set the output sample to the previous sample.
+	Otherwise,
+		set the output sample to the one before that.
+
+After this, you may wish to add a low-pass filter in.
+
+By all means, feel free to develop your own filter.
+
 """
 
 import sys, struct
+
+USE_LPF = True
 
 def f(blri, blrd):
 	infp = open(sys.argv[1],"rb")
 	outfp = open(sys.argv[2],"wb")
 	aoutfp = open(sys.argv[3],"wb")
 	
+	slq = 0
+	sls = 100
+	lq2 = 0
+	lq1 = 0
 	lq = 0
 	ls = 1
 	lri = blri
@@ -98,7 +135,20 @@ def f(blri, blrd):
 			lq = nlq
 			err = lq - v
 			mse += err*err
-			aoutfp.write(chr(lq&255))
+			
+			# simple post-filter
+			sv = lq
+			if t != lt:
+				sv = (lq2+lq1)//2
+			
+			if USE_LPF:
+				slq = slq + (sls*(sv-slq)+128)//256
+				aoutfp.write(chr(slq&255))
+			else:
+				aoutfp.write(chr(sv&255))
+			
+			lq2 = lq1
+			lq1 = lq
 			
 			if t == lt:
 				nls = ls + (lri*(255-ls)+128)//256
