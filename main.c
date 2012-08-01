@@ -6,7 +6,6 @@ remember to do it often, or everything will turn to crap!
     --GM
 */
 
-#include "client.h"
 #include "common.h"
 #include "event.h"
 #include "interface.h"

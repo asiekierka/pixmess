@@ -306,47 +306,6 @@ void net_layer_release(s32 x, s32 y)
 	}
 }
 
-void net_block_set(s32 x, s32 y, tile_t tile)
-{
-	printf("net_block_set: %d,%d\n", x, y);
-	
-	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
-	{
-		net_pack(NULL, PKT_BLOCK_SET,
-			x, y,
-			tile.type, tile.col, tile.chr);
-	} else {
-		map_set_tile(client_map, x, y, tile);
-	}
-}
-
-void net_block_push(s32 x, s32 y, tile_t tile)
-{
-	printf("net_block_push: %d,%d\n", x, y);
-	
-	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
-	{
-		net_pack(NULL, PKT_BLOCK_PUSH,
-			x, y,
-			tile.type, tile.col, tile.chr);
-	} else {
-		map_push_tile(client_map, x, y, tile);
-	}
-}
-
-void net_block_pop(s32 x, s32 y)
-{
-	printf("net_block_pop: %d,%d\n", x, y);
-	
-	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
-	{
-		net_pack(NULL, PKT_BLOCK_POP,
-			x, y);
-	} else {
-		map_pop_tile(client_map, x, y);
-	}
-}
-
 void net_entity_movement(s32 dx, s32 dy)
 {
 	//printf("net_entity_movement: %d,%d\n", dx, dy);

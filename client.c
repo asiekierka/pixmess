@@ -3,6 +3,47 @@
 #include "map.h"
 #include "network.h"
 
+void client_net_block_set(map_t *map, s32 x, s32 y, tile_t tile)
+{
+	printf("client_net_block_set: %d,%d\n", x, y);
+	
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		net_pack(NULL, PKT_BLOCK_SET,
+			x, y,
+			tile.type, tile.col, tile.chr);
+	} else {
+		map_set_tile(map, x, y, tile);
+	}
+}
+
+void client_net_block_push(map_t *map, s32 x, s32 y, tile_t tile)
+{
+	printf("client_net_block_push: %d,%d\n", x, y);
+	
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		net_pack(NULL, PKT_BLOCK_PUSH,
+			x, y,
+			tile.type, tile.col, tile.chr);
+	} else {
+		map_push_tile(map, x, y, tile);
+	}
+}
+
+void client_net_block_pop(map_t *map, s32 x, s32 y)
+{
+	printf("client_net_block_pop: %d,%d\n", x, y);
+	
+	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
+	{
+		net_pack(NULL, PKT_BLOCK_POP,
+			x, y);
+	} else {
+		map_pop_tile(map, x, y);
+	}
+}
+
 void client_load_chunk(map_t *map, s32 x, s32 y)
 {
 	s32 px = divneg(x,LAYER_WIDTH);
@@ -14,7 +55,7 @@ void client_load_chunk(map_t *map, s32 x, s32 y)
 void client_set_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
 	client_load_chunk(map, x, y);
-	net_block_set(x, y, tile);
+	client_net_block_set(map, x, y, tile);
 }
 
 void client_set_tile_ext(map_t *map, s32 x, s32 y, u8 uidx, tile_t tile, int sendflag)
@@ -53,13 +94,13 @@ tile_t client_get_tile(map_t *map, s32 x, s32 y)
 void client_push_tile(map_t *map, s32 x, s32 y, tile_t tile)
 {
 	client_load_chunk(map, x, y);
-	net_block_push(x, y, tile);
+	client_net_block_push(map, x, y, tile);
 }
 
 void client_pop_tile(map_t *map, s32 x, s32 y)
 {
 	client_load_chunk(map, x, y);
-	net_block_pop(x, y);
+	client_net_block_pop(map, x, y);
 }
 
 u8 client_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)
