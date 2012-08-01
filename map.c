@@ -389,8 +389,8 @@ void layer_switch_masks(layer_t *layer)
 {
 	// why free 30 times a second? ^3^
 	u32 *temp = layer->updmask;
-	layer->updmask = (u32 *)&layer->new_updmask;
-	layer->new_updmask = (u32 *)&temp;	
+	layer->updmask = layer->new_updmask;
+	layer->new_updmask = temp;	
 	memset(layer->new_updmask,0x00,((layer->w+31)/32)*layer->h*4);
 };
 
