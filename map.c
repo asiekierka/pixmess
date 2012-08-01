@@ -48,7 +48,9 @@ layer_t *layer_new(int w, int h, int template)
 	a->w = w;
 	a->h = h;
 	a->updmask = malloc(((w+31)/32)*h*4);
+	a->new_updmask = malloc(((w+31)/32)*h*4);
 	memset(a->updmask,0xFF,((w+31)/32)*h*4); // FIXME: check for widths not divisible by 32
+	memset(a->new_updmask,0x00,((w+31)/32)*h*4);
 	
 	a->tiles = (tile_t *)malloc(sizeof(tile_t)*w*h);
 	int i;
@@ -383,11 +385,20 @@ u8 layer_get_next_update(layer_t *layer, u32 *ux, u32 *uy)
 	return 0;
 };
 
+void layer_switch_masks(layer_t *layer)
+{
+	// why free 30 times a second? ^3^
+	u32 *temp = layer->updmask;
+	layer->updmask = (u32 *)&layer->new_updmask;
+	layer->new_updmask = (u32 *)&temp;	
+	memset(layer->new_updmask,0x00,((layer->w+31)/32)*layer->h*4);
+};
+
 void layer_set_update(layer_t *layer, u32 ux, u32 uy)
 {
-	u32 i = ux * ((uy+7)/8);
-	u8 k = uy & 7;
-	layer->updmask[i] |= 1<<k;
+	u32 i = uy*((layer->w+31)/32) + (ux/32);
+	u8 k = ux & 31;
+	layer->new_updmask[i] |= 1<<k;
 };
 
 map_t *map_new(u32 layercount)
@@ -826,6 +837,14 @@ void map_pop_tile(map_t *map, s32 x, s32 y)
 	layer_t *chunk = map_get_existing_layer(map,chunk_x,chunk_y);
 	if(chunk == NULL) return;
 	layer_pop_tile(absmod(x,chunk->w),absmod(y,chunk->h),chunk);
+}
+
+void map_switch_masks(map_t *map)
+{
+	int i;	
+	for(i=0;i<map->layer_count;i++)
+		if(map->layers[i].data != NULL)
+			layer_switch_masks(map->layers[i].data);
 }
 
 u8 map_get_next_update(map_t *map, int *lidx, s32 *x, s32 *y)

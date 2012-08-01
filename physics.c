@@ -19,6 +19,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				tile->col ^= 0x08;
 				map->f_set_tile_ext(map, x, y, uidx,
 					*tile, 1);
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			break;
 	}
@@ -34,12 +35,13 @@ void handle_physics(map_t *map)
 	int lidx = 0;
 	tile_t *tile;
 	u8 uidx;
+	u32 changes = 0;
 	int is_server = (map == server_map);
 	
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
-		if(is_server) printf("Got an update on %d,%d\n",x,y);
+		changes++;
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);
 		uidx = 0;
@@ -52,10 +54,18 @@ void handle_physics(map_t *map)
 			{
 				int handle_ret = handle_physics_tile(map, x, y, &new_tile, uidx);
 				x++;
-				
-				// TODO: handle some possible return codes here!
-			}
-			
+				switch(handle_ret)
+				{
+					default:
+						break;
+					case HPT_RET_UPDATE_SELF:
+						map->f_set_update(map,x,y);
+						break;
+					case HPT_RET_UPDATE_SELF_AND_NEIGHBORS:
+						map->f_set_update_n(map,x,y);
+						break;
+				}
+			}			
 			tile = tile->under;
 			uidx++;
 			
@@ -66,4 +76,6 @@ void handle_physics(map_t *map)
 			}
 		}
 	}
+
+	if(changes>0) map_switch_masks(map);
 }
