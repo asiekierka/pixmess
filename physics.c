@@ -42,7 +42,7 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 			case TILE_WIRE: {
 				if(out->datalen != 2) break;
 				u8 max_power = (out->data[0] - 1);
-				if(out->data[1] == (dir^1) || max_power==255) return 0;
+				if(out->data[1] == (dir^1) || max_power>15) return 0;
 				return max_power;
 				break; }
 			case TILE_PNAND: {
