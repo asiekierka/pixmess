@@ -4,6 +4,26 @@
 #include "physics.h"
 #include "types.h"
 
+// y-1, y+1, x+1, x-1
+const u16 wirium_chars[16] = {
+	197, // 0
+	179, // N
+	179, // S
+	179, // NS
+	196, // E
+	192, // EN
+	218, // ES
+	195, // ENS
+	196, // W
+	217, // WN
+	191, // WS
+	180, // WNS
+	196, // WE
+	193, // WEN
+	194, // WES
+	197  // WENS
+};
+
 pblocklist_t *blocklist;
 
 void add_tile(s32 x, s32 y, u8 uidx, tile_t *tile, u8 copy)
@@ -57,6 +77,16 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 	return 0;
 }
 
+u8 can_tile_active(tile_t *tile)
+{
+	tile_t *out = tile;
+	while(out != NULL)
+	{
+		if(!tile_active(*tile)) return 1;
+		out = out->under;
+	}
+	return 0;
+}
 
 int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 {
@@ -91,18 +121,22 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			}
 			u8 changed = 0;
 			u8 curr_power = 0;
+			u16 char_old = tile->chr;
 			u8 old_dir = tile->data[1];
 			tile->data[1] = 4;
+			u8 char_sel = 0;
 			for(i=0;i<4;i++)
 			{
 				//if((old_dir^1)==i) continue;
 				changed = is_tile_active(ntiles[i],curr_power,i^1);
+				if(can_tile_active(ntiles[i])) char_sel |= 1<<i;
 				if(changed > curr_power)
 				{
 					curr_power = changed;
 					tile->data[1] = i^1;
 				}
 			}
+			tile->chr = wirium_chars[15-char_sel];
 			tile->data[0] = curr_power;
 			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
@@ -114,6 +148,10 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				tile->col = (fg&7);
 				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+			} else if(tile->chr != char_old)
+			{
+				add_tile(x,y,uidx,tile,1);
+				return 0;
 			}
 			return 0; }
 		case TILE_PNAND: {
