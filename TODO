@@ -1,7 +1,9 @@
 BLOCKING:
 
+BUGS:
+- wire does not tile properly on chunk borders, may want to consider fixing that
+
 IMPORTANT:
-- WIRIUM D:
 
 NEW FEATURES:
 - consider changing the stackability storage in tile.c

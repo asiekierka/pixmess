@@ -82,7 +82,7 @@ u8 can_tile_active(tile_t *tile)
 	tile_t *out = tile;
 	while(out != NULL)
 	{
-		if(!tile_active(*tile)) return 1;
+		if(tile_active(*tile)) return 1;
 		out = out->under;
 	}
 	return 0;
@@ -136,7 +136,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 					tile->data[1] = i^1;
 				}
 			}
-			tile->chr = wirium_chars[15-char_sel];
+			tile->chr = wirium_chars[char_sel];
 			tile->data[0] = curr_power;
 			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
@@ -151,7 +151,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			} else if(tile->chr != char_old)
 			{
 				add_tile(x,y,uidx,tile,1);
-				return 0;
+				return HPT_RET_UPDATE_SELF;
 			}
 			return 0; }
 		case TILE_PNAND: {
