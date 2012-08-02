@@ -62,11 +62,11 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 			case TILE_WIRE: {
 				if(out->datalen != 2) break;
 				u8 max_power = (out->data[0] - 1);
-				if(out->data[1] == (dir^1) || max_power>15) return 0;
+				if((dir<4 && out->data[1] == (dir^1)) || max_power>31) return 0;
 				return max_power;
 				break; }
 			case TILE_PNAND: {
-				if(out->col > 15 && (out->chr-24)==dir)
+				if(out->col > 15 && ((dir>3) || (out->chr-24)==dir))
 				{
 					return 15;
 				}
@@ -161,11 +161,12 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			{
 				// Check for output direction
 				if(i+24 == tile->chr) continue;
+				printf("%d %d: Checking position %d\n",x,y,i);
 
 				if(find_tile_by_type(ntiles[i],TILE_WALL) ||
-				   is_tile_active(ntiles[i], 0, 255)>0)
+				   is_tile_active(ntiles[i], 0, 4)>0)
 				{
-					printf("I PNANDed at position %d\n",i);
+					printf("%d %d: I PNANDed at position %d\n",x,y,i);
 					j++;
 				}
 			}
