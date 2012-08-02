@@ -270,6 +270,8 @@ void render_ui(void)
 
 	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16,SFP_SCREEN_REAL_WIDTH,16,0x000000);
 
+	verify_tile();
+
 	// Prepare some variables.
 	u8 whichHL = 0;
 	if(inside_rect(mousex,mousey,1*16,SFP_FIELD_HEIGHT*16,UI_BUTTONS*16,1*16))
