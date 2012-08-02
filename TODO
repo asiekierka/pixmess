@@ -2,6 +2,7 @@ BLOCKING:
 
 BUGS:
 - wire does not tile properly on chunk borders, may want to consider fixing that
+- wirium gets a WTF when connecting a RS latch to itself, may want to look into it further
 
 IMPORTANT:
 
