@@ -21,19 +21,14 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 		switch(out->type)
 		{
 			case TILE_WIRE: {
-				if(out->datalen != 4) break;
-				u8 max_power = 0;
-				if(out->data[dir] > max_power)
-					max_power = (out->data[dir] - 1);
-				if(out->data[dir^2] > max_power)
-					max_power = (out->data[dir^2] - 1);
-				if(out->data[dir^3] > max_power)
-					max_power = (out->data[dir^3] - 1);
-				if(max_power > 0) return max_power;
+				if(out->datalen != 2) break;
+				u8 max_power = (out->data[0] - 1);
+				if(out->data[1] == (dir^1) || max_power==255) return 0;
+				return max_power;
 				break; }
 			case TILE_PNAND: {
 				if(out->col > 15 && (out->col-24)==dir)
-					printf("\nPNAND 15");
+					printf("\nPNAND 15\n");
 					return 15;
 				break; }
 		}
@@ -65,38 +60,44 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 		case TILE_WIRE: {
 			// TEST: flip light for serverside
 			if(!is_server) return 0;
-			printf("LOLWIRE");
-			if(tile->datalen != 4)
+			if(tile->datalen != 2)
 			{
+				if(tile->datalen > 0) free(tile->data);
 				// Set data if it does not exist
-				tile->data = malloc(4);
-				tile->datalen = 4;
+				tile->data = malloc(2);
+				tile->datalen = 2;
 				tile->data[0] = 0;
-				tile->data[1] = 0;
-				tile->data[2] = 0;
-				tile->data[3] = 0;
+				tile->data[1] = 4;
 			}
 			u8 changed = 0;
+			u8 curr_power = 0;
+			u8 old_dir = tile->data[1];
+			tile->data[1] = 4;
 			for(i=0;i<4;i++)
 			{
-				changed = tile->data[i^1];
-				tile->data[i^1] = is_tile_active(ntiles[i],tile->data[i^1], i^1);
-				if(tile->data[i^1] != changed) changed++;
+				//if((old_dir^1)==i) continue;
+				changed = is_tile_active(ntiles[i],curr_power,i^1);
+				if(changed > curr_power)
+				{
+					curr_power = changed;
+					tile->data[1] = i^1;
+				}
 			}
-			u8 curr_power = MAX(MAX(tile->data[0],tile->data[1]),MAX(tile->data[2],tile->data[3]));
+			tile->data[0] = curr_power;
 			printf("\nCurrent power: %d\n",curr_power);
-			if(curr_power>0 && fg<=7)
+			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
 				tile->col = (fg&7)+8;
 				map->f_set_tile_ext(map, x, y, uidx,
 					*tile, is_server);
-			} else if(curr_power==0 && fg>7)
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+			} else if(curr_power==0 && (fg&7)!=fg)
 			{
 				tile->col = (fg&7);
 				map->f_set_tile_ext(map, x, y, uidx,
 					*tile, is_server);
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
-			if(changed) return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			return 0; }
 		case TILE_PNAND: {
 			if(!is_server) return 0;

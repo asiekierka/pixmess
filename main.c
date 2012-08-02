@@ -141,7 +141,12 @@ void mouse_placement()
 		client_map->f_pop_tile(client_map,bx,by);
 		client_map->f_set_update_n(client_map,bx,by,0);
 	}
-	
+
+	tile_t test = client_map->f_get_tile(client_map,bx,bx);
+	if(test.type == TILE_WIRE && test.datalen == 2)
+	{
+		sfp_printf_1x(sfp_event_mouse_x(),sfp_event_mouse_y(),0x1f,0,"%d %d",test.data[0],test.data[1]);
+	}
 	pressed_0 = pressing_0;
 	pressed_1 = pressing_1;
 	pressed_2 = pressing_2;
