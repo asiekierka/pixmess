@@ -126,7 +126,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				if(i+24 == tile->chr) continue;
 
 				if(find_tile_by_type(ntiles[i],TILE_WALL) ||
-				   is_tile_active(ntiles[i], -1, i^1))
+				   is_tile_active(ntiles[i], -1, i^1)>0)
 				{
 					j++;
 				}
