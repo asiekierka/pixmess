@@ -4,6 +4,25 @@
 #include "physics.h"
 #include "types.h"
 
+pblocklist_t *blocklist;
+
+void add_tile(s32 x, s32 y, u8 uidx, tile_t *tile, u8 copy)
+{
+	tile_t *tile2 = tile;
+	if(copy>0)
+	{
+		tile2 = (tile_t *)malloc(sizeof(tile_t));
+		memcpy(tile2,tile,sizeof(tile_t));
+	}
+	pblocklist_t *old_list = blocklist;
+	blocklist = (pblocklist_t*)malloc(sizeof(pblocklist_t));
+	blocklist->x = x;
+	blocklist->y = y;
+	blocklist->uidx = uidx;
+	blocklist->tile = tile2;
+	blocklist->next = old_list;
+}
+
 tile_t *find_tile_by_type(tile_t *tile, u8 type)
 {
 	tile_t *out = tile;
@@ -88,14 +107,12 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
 				tile->col = (fg&7)+8;
-				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, is_server);
+				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			} else if(curr_power==0 && (fg&7)!=fg)
 			{
 				tile->col = (fg&7);
-				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, is_server);
+				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			return 0; }
@@ -118,15 +135,13 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			{
 				printf("SET");
 				tile->col = (fg<<4);
-				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, is_server);
+				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			else if(!(j==1 || j==2) && bg > 0)
 			{
 				tile->col = bg;
-				map->f_set_tile_ext(map, x, y, uidx,
-					*tile, is_server);
+				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			return 0; }
@@ -184,6 +199,18 @@ void handle_physics(map_t *map)
 				break;
 			}
 		}
+	}
+
+	tile_t *next_tile;
+	pblocklist_t *old_list;
+	while(blocklist != NULL)
+	{
+		map->f_set_tile_ext(map, blocklist->x, blocklist->y, blocklist->uidx,
+			*blocklist->tile, is_server);
+		old_list = blocklist;
+		blocklist = blocklist->next;
+		free(old_list->tile);
+		free(old_list);
 	}
 	map_switch_masks(map);
 }

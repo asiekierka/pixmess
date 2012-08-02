@@ -48,6 +48,15 @@ typedef struct layer
 	u32 *new_updmask;
 } layer_t;
 
+typedef struct pblocklist pblocklist_t;
+struct pblocklist
+{
+	s32 x,y;
+	u8 uidx;
+	tile_t *tile;
+	pblocklist_t *next;
+};
+
 typedef struct netpacket netpacket_t;
 struct netpacket
 {
