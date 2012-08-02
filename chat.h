@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#define MAX_CHAT_MSG 20
+
 void add_chat_msg(char* msg);
 char* get_chat_msg(int count);
 
