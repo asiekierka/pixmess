@@ -48,7 +48,6 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 			case TILE_PNAND: {
 				if(out->col > 15 && (out->chr-24)==dir)
 				{
-					printf("\nPNAND 15\n");
 					return 15;
 				}
 				break; }
@@ -105,7 +104,6 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				}
 			}
 			tile->data[0] = curr_power;
-			printf("\nCurrent power: %d\n",curr_power);
 			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
 				tile->col = (fg&7)+8;
@@ -120,7 +118,6 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			return 0; }
 		case TILE_PNAND: {
 			if(!is_server) return 0;
-			printf("LOLPNAND");
 			int j = 0;
 			for(i=0;i<4;i++)
 			{
@@ -128,14 +125,14 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				if(i+24 == tile->chr) continue;
 
 				if(find_tile_by_type(ntiles[i],TILE_WALL) ||
-				   is_tile_active(ntiles[i], -1, i^1)>0)
+				   is_tile_active(ntiles[i], 0, i^1)>0)
 				{
+					printf("I PNANDed at position %d\n",i);
 					j++;
 				}
 			}
 			if((j==1 || j==2) && fg > 0)
 			{
-				printf("SET");
 				tile->col = (fg<<4);
 				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
