@@ -46,7 +46,7 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 				return max_power;
 				break; }
 			case TILE_PNAND: {
-				if(out->col > 15 && (out->col-24)==dir)
+				if(out->col > 15 && (out->chr-24)==dir)
 				{
 					printf("\nPNAND 15\n");
 					return 15;
