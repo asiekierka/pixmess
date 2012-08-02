@@ -57,6 +57,13 @@ struct pblocklist
 	pblocklist_t *next;
 };
 
+typedef struct chatmsg chatmsg_t;
+struct chatmsg
+{
+	char* msg;
+	u64 time;
+};
+
 typedef struct netpacket netpacket_t;
 struct netpacket
 {
