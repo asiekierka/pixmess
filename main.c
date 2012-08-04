@@ -6,6 +6,7 @@ remember to do it often, or everything will turn to crap!
     --GM
 */
 
+#include "audio.h"
 #include "client.h"
 #include "common.h"
 #include "event.h"
@@ -204,14 +205,17 @@ int main(int argc, char *argv[])
 		default:
 			printf("usage:\n");
 			printf("%s\n\t- PKTCOPY singleplayer mode\n\n", argv[0]);
-			printf("%s port\n\t- server\n\n", argv[0]);
-			printf("%s hostname port\n\t- client\n\n", argv[0]);
-			printf("%s headless port - headless server\n\n", argv[0]);
+			printf("%s <port>\n\t- server\n\n", argv[0]);
+			printf("%s <hostname> <port>\n\t- client\n\n", argv[0]);
+			printf("%s headless <port> - headless server\n\n", argv[0]);
 			return 99;
 	}
 	
 	// Initialise stuff.
-	if(!no_display && sfp_init_render())
+	if((!no_display) && sfp_init_render())
+		return 1;
+	
+	if((!no_display) && sfp_audio_init())
 		return 1;
 	
 	if(net_init(net_addr, net_port))

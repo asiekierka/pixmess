@@ -1,5 +1,21 @@
 # object files
 *.o
 *.exe
-*.dll
+pixmess
+
+# backups
 *~
+
+# libraries
+*.dll
+*.a
+*.la
+*.lai
+
+# windows-related crap
+stderr.txt
+stdout.txt
+windows.sucks.tmp
+
+# misc
+*.zip
