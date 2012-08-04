@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <sys/time.h>
+
 #ifndef WIN32
 #include <signal.h>
 #endif

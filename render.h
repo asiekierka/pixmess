@@ -33,7 +33,6 @@ void sfp_printf_2x(int x, int y, int col, int flags, char *fmt, ...);
 //
 
 #ifdef I_WANT_INTERNAL_RENDER_STUFF
-#include <SDL.h>
 
 void sfp_render_draw_rect(int x, int y, int w, int h, u32 col);
 void sfp_render_fill_rect(int x, int y, int w, int h, u32 col);

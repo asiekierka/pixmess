@@ -11,6 +11,10 @@ Differences from reference DFPWM implementation:
 
 */
 
+u16 audio_rb[AUDIO_RB_SIZE][2];
+int audio_rb_start = 0;
+int audio_rb_end = 0;
+
 //
 // UNOPTIMISED IMPLEMENTATION
 //
@@ -28,7 +32,7 @@ inline void dfpwm_update_model(int *q, int *s, int ri, int rd, int lt, int t)
 	}
 	
 	// adjust charge
-	int nq = *q + ((*s * (t-*q) + 0x80)>>8);
+	int nq = *q + ((*s * (t-*q) + 0x8000)>>16);
 	if(nq == *q && nq != t)
 		nq += (t ? 1 : -1);
 	*q = nq;
@@ -56,12 +60,13 @@ inline int dfpwm_decompress_bit(int *q, int *s, int ri, int rd, int *lt, int *fq
 {
 	int t = bit ? 0xFFFF : 0x0000;
 	
+	int lq = *q;
 	dfpwm_update_model(q,s,ri,rd,*lt,t);
 	
 	// antijerk
 	int ret = (t == *lt)
-		? t
-		: ((t+*lt)>>1);
+		? *q
+		: ((*q+lq)>>1);
 	
 	// low pass filter
 	*fq = (100 * (ret-*fq) + 0x80)>>8;
@@ -114,6 +119,109 @@ void dfpwm_decompress(int *q, int *s, int ri, int rd, int *lt, int *fq, int len,
 		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x80);
 	}
 	
+}
+
+/*int audio_loadchunk(int len, s16 *buf)
+{
+	int ret = 0;
+	
+	// deal to ring buffer
+	if(audio_rb_start+len > AUDIO_RB_SIZE)
+	{
+		int nlen = AUDIO_RB_SIZE - audio_rb_start;
+		int nret = audio_loadchunk(nlen, buf);
+		ret += nret;
+		buf += nlen*2;
+		len -= nlen;
+	}
+	
+	// calculate remaining sample count
+	int smpcount = (audio_rb_start > audio_rb_end)
+		? audio_rb_end - audio_rb_start
+		: audio_rb_end + AUDIO_RB_SIZE - audio_rb_start;
+	
+	if(((audio_rb_start+1)%AUDIO_RB_SIZE) == audio_rb_end)
+	{
+		return 0;
+	} else {
+		
+	}
+}
+
+int audio_stealchunk(int len, s16 *buf)
+{
+	int ret = 0;
+	
+	// deal to ring buffer
+	while(audio_rb_start+len > AUDIO_RB_SIZE)
+	{
+		int nlen = AUDIO_RB_SIZE - audio_rb_start;
+		int nret = audio_stealchunk(nlen, buf);
+		ret += nret;
+		buf += nlen*2;
+		len -= nlen;
+	}
+	
+	if(audio_rb_start == audio_rb_end)
+	{
+		
+	}
+}*/
+
+
+// TODO: refactor it to something similar to that which is above
+FILE *autest = NULL;
+
+int dfp_q = 0x8000;
+int dfp_s = 0;
+int dfp_fq = 0;
+int dfp_lt = 0;
+int dfp_ri = 7;
+int dfp_rd = 20;
+int audio_stealchunk(int len, s16 *buf)
+{
+	if(autest == NULL)
+	{
+		autest = fopen("autest.raw","rb");
+		if(autest == NULL)
+		{
+			// XXX: tmpfile fails in Windows, I don't know why --GM
+			autest = tmpfile();
+			if(autest == NULL)
+			{
+				memset(buf, 0, len*4);
+				return len;
+			}
+		}
+	}
+	
+	int i,j;
+	
+	u8 tcmp;
+	u16 traw[8];
+	
+	for(i = 0; i < len/8; i++)
+	{
+		// cmp/decmp
+		for(j = 0; j < 8; j++)
+		{
+			traw[j] = 0;
+			fread(&traw[j], 2, 1, autest);
+			traw[j] ^= 0x8000;
+		}
+		
+		dfpwm_compress(&dfp_q, &dfp_s, dfp_ri, dfp_rd, &dfp_lt, 1, traw, &tcmp);
+		dfpwm_decompress(&dfp_q, &dfp_s, dfp_ri, dfp_rd, &dfp_lt, &dfp_fq, 1, traw, &tcmp);
+		
+		for(j = 0; j < 8; j++)
+		{
+			traw[j] ^= 0x8000;
+			*(buf++) = traw[j];
+			*(buf++) = traw[j];
+		}
+	}
+	
+	return len;
 }
 
 int sfp_audio_init()

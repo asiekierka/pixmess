@@ -3,6 +3,8 @@
 #define I_WANT_INTERNAL_RENDER_STUFF
 #include "render.h"
 
+#include <SDL.h>
+
 // Rendering code by GreaseMonkey and somewhat asiekierka
 
 SDL_Surface *screen;
