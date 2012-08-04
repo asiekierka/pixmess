@@ -24,15 +24,15 @@ inline void dfpwm_update_model(int *q, int *s, int ri, int rd, int lt, int t)
 	int st, sr;
 	if(t == lt)
 	{
-		st = 0xFFFF;
+		st = 0xFF;
 		sr = ri;
 	} else {
-		st = 0x0000;
+		st = 0x00;
 		sr = rd;
 	}
 	
 	// adjust charge
-	int nq = *q + ((*s * (t-*q) + 0x8000)>>16);
+	int nq = *q + ((*s * (t-*q) + 0x80)>>8);
 	if(nq == *q && nq != t)
 		nq += (t ? 1 : -1);
 	*q = nq;
@@ -73,6 +73,11 @@ inline int dfpwm_decompress_bit(int *q, int *s, int ri, int rd, int *lt, int *fq
 	ret = *fq;
 	
 	*lt = t;
+	
+	if(ret < 0x0000)
+		ret = 0x0000;
+	if(ret >= 0xFFFF)
+		ret = 0xFFFF;
 	
 	return ret;
 }
