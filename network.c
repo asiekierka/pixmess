@@ -14,6 +14,30 @@
 WSADATA wsaihateyou;
 #endif
 
+void write16le(u16 data, u8 *v)
+{
+	v[0] = data;
+	v[1] = data>>8;
+}
+
+void write32le(u32 data, u8 *v)
+{
+	v[0] = data;
+	v[1] = data>>8;
+	v[2] = data>>16;
+	v[3] = data>>24;
+}
+
+u16 read16le(u8 *v)
+{
+	return v[0] | (v[1]<<8);
+}
+
+u32 read32le(u8 *v)
+{
+	return v[0] | (v[1]<<8) | (v[2]<<16) | (v[3]<<24);
+}
+
 // some delicious strings
 char *net_pktstr_c2s[128] = {
 	NULL, "44112", "44112", "44", "441112", "4412", "4412s", NULL,
@@ -179,11 +203,11 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 			*(data++) = va_arg(args, int);
 			break;
 		case '2':
-			*((u16 *)data) = va_arg(args, int);
+			write16le(va_arg(args, int), (u8 *)data);
 			data += 2;
 			break;
 		case '4':
-			*((u32 *)data) = va_arg(args, int);
+			write32le(va_arg(args, int), (u8 *)data);
 			data += 4;
 			break;
 		case 's':
@@ -200,7 +224,7 @@ netpacket_t *net_pack(netplayer_t *np, u8 cmd, ...)
 			if(j > 0xFFFF) j = 0xFFFF;
 			
 			v = va_arg(args, char *);
-			*((u16 *)data) = j;
+			write16le(j, (u8 *)data);
 			data += 2;
 			memcpy(data, v, j);
 			data += j;
@@ -491,11 +515,11 @@ void net_handle_s2c(netpacket_t *pkt)
 	switch(pkt->cmd)
 	{
 		case PKT_BLOCK_SET: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
 			u8 col = *(u8 *)(&pkt->data[9]);
-			u16 chr = *(u16 *)(&pkt->data[10]);
+			u16 chr = read16le(&pkt->data[10]);
 			
 			tile_t t;
 			
@@ -513,11 +537,11 @@ void net_handle_s2c(netpacket_t *pkt)
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_PUSH: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
 			u8 col = *(u8 *)(&pkt->data[9]);
-			u16 chr = *(u16 *)(&pkt->data[10]);
+			u16 chr = read16le(&pkt->data[10]);
 			
 			tile_t t;
 			
@@ -532,19 +556,19 @@ void net_handle_s2c(netpacket_t *pkt)
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_POP: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			
 			map_pop_tile(client_map, x, y);
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_SET_EXT: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 uidx = *(u8 *)(&pkt->data[8]);
 			u8 type = *(u8 *)(&pkt->data[9]);
 			u8 col = *(u8 *)(&pkt->data[10]);
-			u16 chr = *(u16 *)(&pkt->data[11]);
+			u16 chr = read16le(&pkt->data[11]);
 			
 			tile_t t;
 			
@@ -559,27 +583,27 @@ void net_handle_s2c(netpacket_t *pkt)
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_ALLOC_DATA: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 uidx = *(u8 *)(&pkt->data[8]);
-			u16 datalen = *(u16 *)(&pkt->data[9]);
+			u16 datalen = read16le(&pkt->data[9]);
 			
 			map_alloc_tile_data(client_map, x, y, uidx, datalen);
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		case PKT_BLOCK_SET_DATA: {
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 uidx = *(u8 *)(&pkt->data[8]);
-			u16 datapos = *(u16 *)(&pkt->data[9]);
-			u8 datalen = *(u16 *)(&pkt->data[11]);
+			u16 datapos = read16le(&pkt->data[9]);
+			u8 datalen = read16le(&pkt->data[11]);
 			
 			map_set_tile_data(client_map, x, y, uidx, datalen, datapos, &pkt->data[12]);
 			client_map->f_set_update_n(client_map,x,y,0);
 		} break;
 		
 		case PKT_ENTITY_MOVEMENT: {
-			int id = *(u16 *)&pkt->data[0];
+			int id = read16le(&pkt->data[0]);
 			int dx = *(s8 *)&pkt->data[2];
 			int dy = *(s8 *)&pkt->data[3];
 			
@@ -594,14 +618,14 @@ void net_handle_s2c(netpacket_t *pkt)
 			p->y += dy;
 		} break;
 		case PKT_ENTITY_CREATION: {
-			u16 id = *(u16 *)(&pkt->data[0]);
+			u16 id = read16le(&pkt->data[0]);
 			
 			player_t *p = net_player_allocnew_client(id);
 			
-			p->x = *(s32 *)(&pkt->data[2]);
-			p->y = *(s32 *)(&pkt->data[6]);
-			p->col = *(u16 *)(&pkt->data[10]);
-			p->chr = *(u16 *)(&pkt->data[11]);
+			p->x = read32le(&pkt->data[2]);
+			p->y = read32le(&pkt->data[6]);
+			p->col = read16le(&pkt->data[10]);
+			p->chr = read16le(&pkt->data[11]);
 			int namelen = pkt->data[13];
 			if(p->name != NULL)
 				free(p->name);
@@ -625,10 +649,10 @@ void net_handle_s2c(netpacket_t *pkt)
 			break;
 		case PKT_LAYER_START: {
 			s32 x, y;
-			x = *(s32 *)(&pkt->data[0]);
-			y = *(s32 *)(&pkt->data[4]);
-			int rawlen = (int)*(u32 *)(&pkt->data[8]);
-			int cmplen = (int)*(u32 *)(&pkt->data[12]);
+			x = read32le(&pkt->data[0]);
+			y = read32le(&pkt->data[4]);
+			int rawlen = (int)read32le(&pkt->data[8]);
+			int cmplen = (int)read32le(&pkt->data[12]);
 			printf("layer start %i,%i: %i -> %i\n", x,y,rawlen,cmplen);
 			
 			// don't accept anything above 2MB compressed OR uncompressed
@@ -662,7 +686,7 @@ void net_handle_s2c(netpacket_t *pkt)
 			client_map->layer_cmppos = 0;
 		} break;
 		case PKT_LAYER_DATA: {
-			int slen = *(u16 *)(&pkt->data[0]);
+			int slen = read16le(&pkt->data[0]);
 			u8 *inbuf = (u8 *)(&pkt->data[2]);
 			
 			printf("layer data: %i+%i -> %i\n",
@@ -753,24 +777,24 @@ void net_handle_s2c(netpacket_t *pkt)
 			// TODO: deal with this correctly
 			s32 x, y;
 			u8 pos;
-			x = *(s32 *)(&pkt->data[0]);
-			y = *(s32 *)(&pkt->data[4]);
+			x = read32le(&pkt->data[0]);
+			y = read32le(&pkt->data[4]);
 			printf("layer release %i,%i\n", x,y);
 		} break;
 		
 		case PKT_ENTITY_POSITION: {
-			u16 id = *(u16 *)(&pkt->data[0]);
+			u16 id = read16le(&pkt->data[0]);
 			player_t *p = players[id];
 			if(p == NULL)
 			{
 				printf("ERROR: entity %i does not exist!\n", id);
 				break;
 			}
-			p->x = *(s32 *)(&pkt->data[2]);
-			p->y = *(s32 *)(&pkt->data[6]);
+			p->x = read32le(&pkt->data[2]);
+			p->y = read32le(&pkt->data[6]);
 		} break;
 		case PKT_ENTITY_DESTRUCTION: {
-			u16 id = *(u16 *)(&pkt->data[0]);
+			u16 id = read16le(&pkt->data[0]);
 			player_t *p = players[id];
 			if(p == NULL)
 			{
@@ -791,7 +815,7 @@ void net_handle_s2c(netpacket_t *pkt)
 		case PKT_PONG:
 			break;
 		case PKT_PLAYER_ID: {
-			net_id = *(u16 *)&pkt->data[0];
+			net_id = read16le(&pkt->data[0]);
 			net_player.flags |= NPF_LOGGEDIN;
 			net_player.player = players[net_id];
 		} break;
@@ -820,11 +844,11 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 	{
 		case PKT_BLOCK_SET: {
 			C2S_NEED_LOGIN;
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
 			u8 col = *(u8 *)(&pkt->data[9]);
-			u16 chr = *(u16 *)(&pkt->data[10]);
+			u16 chr = read16le(&pkt->data[10]);
 			
 			tile_t t;
 			
@@ -844,11 +868,11 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 		} break;
 		case PKT_BLOCK_PUSH: {
 			C2S_NEED_LOGIN;
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			u8 type = *(u8 *)(&pkt->data[8]);
 			u8 col = *(u8 *)(&pkt->data[9]);
-			u16 chr = *(u16 *)(&pkt->data[10]);
+			u16 chr = read16le(&pkt->data[10]);
 			
 			tile_t t;
 			
@@ -868,8 +892,8 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 		} break;
 		case PKT_BLOCK_POP: {
 			C2S_NEED_LOGIN;
-			s32 x = *(s32 *)(&pkt->data[0]);
-			s32 y = *(s32 *)(&pkt->data[4]);
+			s32 x = read32le(&pkt->data[0]);
+			s32 y = read32le(&pkt->data[4]);
 			
 			server_map->f_pop_tile(server_map, x, y);
 			
@@ -913,8 +937,8 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			
 			s32 x, y;
 			u8 pos;
-			x = *(s32 *)(&pkt->data[0]);
-			y = *(s32 *)(&pkt->data[4]);
+			x = read32le(&pkt->data[0]);
+			y = read32le(&pkt->data[4]);
 			pos = *(u8 *)(&pkt->data[8]);
 			printf("layer request %i,%i [%i]\n", x,y,pos);
 			
@@ -970,8 +994,8 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			// TODO: deal with this correctly
 			s32 x, y;
 			u8 pos;
-			x = *(s32 *)(&pkt->data[0]);
-			y = *(s32 *)(&pkt->data[4]);
+			x = read32le(&pkt->data[0]);
+			y = read32le(&pkt->data[4]);
 			pos = *(u8 *)(&pkt->data[8]);
 			printf("layer release %i,%i [%i]\n", x,y,pos);
 		} break;
@@ -988,7 +1012,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			C2S_NEED_NOLOGIN;
 			
 			// TODO: set stuff properly
-			int version = *(u16 *)&pkt->data[0];
+			int version = read16le(&pkt->data[0]);
 			printf("Login: version %i\n", version);
 			
 			if(version != SFP_PROTO_VERSION)
@@ -1001,7 +1025,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			np->player->x = 0;
 			np->player->y = 0;
 			np->player->col = pkt->data[2];
-			np->player->chr = *(u16 *)&pkt->data[3];
+			np->player->chr = read16le(&pkt->data[3]);
 			int namelen = pkt->data[5];
 			np->player->name = malloc(namelen+1);
 			np->player->name[namelen] = '\x00';
@@ -1136,7 +1160,7 @@ void net_recv(netplayer_t *np)
 			{
 				size += np->pkt_buf[size-1];
 			} else if(flags & 2) {
-				size += *(u16 *)&np->pkt_buf[size-2];
+				size += read16le(&np->pkt_buf[size-2]);
 			}
 			
 			// check size again

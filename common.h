@@ -22,4 +22,10 @@
 #include "misc.h"
 #include "tile.h"
 
+// TODO shift into the right location
+void write16le(u16 data, u8 *v);
+void write32le(u32 data, u8 *v);
+u16 read16le(u8 *v);
+u32 read32le(u8 *v);
+
 #endif /* _SFP_COMMON_H_ */

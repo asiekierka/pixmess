@@ -50,8 +50,10 @@ layer_t* layer_load(map_t *map, s32 x, s32 y)
 	u32 cmplen = 0;
 	u8* data;
 	
-	fread(&rawlen, 4, 1, file);
-	fread(&cmplen, 4, 1, file);
+	u8 dbuf[8];
+	fread(dbuf, 8, 1, file);
+	rawlen = read32le(&dbuf[0]);
+	cmplen = read32le(&dbuf[4]);
 	if(rawlen == 0 || cmplen == 0)
 	{
 		fprintf(stderr, "ERROR: premature EOF loading map OR invalid lengths\n");
@@ -100,8 +102,11 @@ u8 layer_save(map_t *map, layer_t *layer)
 	
 	u32 rawlen_fp = (u32)rawlen;
 	u32 cmplen_fp = (u32)cmplen;
-	fwrite(&rawlen_fp, 4, 1, file);
-	fwrite(&cmplen_fp, 4, 1, file);
+	
+	u8 dbuf[8];
+	write32le(rawlen_fp, &dbuf[0]);
+	write32le(cmplen_fp, &dbuf[4]);
+	fwrite(dbuf, 8, 1, file);
 	fwrite(data, cmplen, 1, file);
 	
 	fclose(file);
