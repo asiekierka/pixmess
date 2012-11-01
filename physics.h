@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "map.h"
+#include "player.h"
 #include "tile.h"
 
 enum

@@ -9,7 +9,7 @@
 #define LAYER_SIZE_CLIENT 16
 #define LAYER_SIZE_SERVER 128
 
-typedef uint64_t u64;
+ typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
 typedef uint8_t u8;
@@ -23,7 +23,7 @@ typedef struct player
 {
 	s32 x,y;
 	u8 col;
-	u16 chr;
+	u16 chr,id;
 	char *name;
 } player_t;
 

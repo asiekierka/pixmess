@@ -8,6 +8,7 @@ remember to do it often, or everything will turn to crap!
 
 #include "audio.h"
 #include "client.h"
+#include "chat.h"
 #include "common.h"
 #include "event.h"
 #include "interface.h"
@@ -234,11 +235,17 @@ int main(int argc, char *argv[])
 #endif
 	
 	if(!no_self_player) net_login(0x1F, 0x0002, "Gamemaster");
+
+	add_chat_msg("DEBUG: Hello!");
 	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC) || termbysig))
 	{
-		player = net_player.player;
-		
+		if(player == NULL)
+		{
+			player = net_player.player;
+			if(player != NULL) player_set(PLAYER_SELF, player);
+		}
+	
 		if(!no_display)
 		{
 			sfp_render_begin();
@@ -259,8 +266,7 @@ int main(int argc, char *argv[])
 					if(sfp_event_key(SFP_KEY_D))
 						player_move(1,0);
 				}
-				
-				if(movement_wait>0) movement_wait--;
+				else movement_wait--;
 			}
 			
 			if(!ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y()))
