@@ -4,7 +4,12 @@
 #include "physics.h"
 #include "types.h"
 
-// y-1, y+1, x+1, x-1
+// DIRECTION CHEATSHEET: y-1, y+1, x+1, x-1
+
+/* CHAR SEL EXPLANATION:
+   The character selection code, 1<<dir, sets one of the directions. This
+   is the table for the resulting character. */
+ 
 const u16 wirium_chars[16] = {
 	197, // 0
 	179, // N
@@ -26,13 +31,22 @@ const u16 wirium_chars[16] = {
 
 pblocklist_t *blocklist;
 
+#define DATA_FRAGILE 1
+#define DATA_NOT_FRAGILE 0
+
+#define SELF_ADD_TILE add_tile(x,y,uidx,tile,DATA_FRAGILE)
+#define OPPOSITE(a) ((a)^1)
+#define CHR_PNAND(a) ((a)-24)
+#define PNAND_CHR(a) ((a)+24)
+
 void add_tile(s32 x, s32 y, u8 uidx, tile_t *tile, u8 copy)
 {
 	tile_t *tile2 = tile;
 	if(copy>0)
 	{
-		tile2 = (tile_t *)malloc(sizeof(tile_t));
-		memcpy(tile2,tile,sizeof(tile_t));
+		int tile_size = sizeof(*tile);
+		tile2 = (tile_t *)malloc(tile_size);
+		memcpy(tile2,tile,tile_size);
 	}
 	pblocklist_t *old_list = blocklist;
 	blocklist = (pblocklist_t*)malloc(sizeof(pblocklist_t));
@@ -62,11 +76,11 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 			case TILE_WIRE: {
 				if(out->datalen != 2) break;
 				u8 max_power = (out->data[0] - 1);
-				if((dir<4 && out->data[1] == (dir^1)) || max_power>31) return 0;
+				if((dir<4 && out->data[1] == (OPPOSITE(dir))) || max_power>31) return 0;
 				return max_power;
 				break; }
 			case TILE_PNAND: {
-				if(out->col > 15 && ((dir>3) || (out->chr-24)==dir))
+				if(out->col > 15 && ((dir>3) || (out->CHR_PNAND(chr))==dir))
 				{
 					return 15;
 				}
@@ -91,15 +105,14 @@ u8 can_tile_active(tile_t *tile)
 int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 {
 	if(map == NULL || tile == NULL) return -1;
-	//printf("Attempting update on %i,%i,%i\n",x,y,uidx);
-	
-	// assuming map != NULL
 	int is_server = (map == server_map);
+
 	int i = 0;
+	int dir = 0;
 	u8 bg = tile->col>>4;
 	u8 fg = tile->col&15;
 
-	// time to get the neighbors
+	// time to get the neighbours
 	tile_t *ntiles[4];
 	ntiles[0] = map_get_tile_ref(map,x,y-1);
 	ntiles[1] = map_get_tile_ref(map,x,y+1);
@@ -109,9 +122,8 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 	switch(tile->type)
 	{
 		case TILE_WIRE: {
-			// TEST: flip light for serverside
 			if(!is_server) return 0;
-			if(tile->datalen != 2)
+			if(tile->datalen != 2) // Fix the data, if corrupted.
 			{
 				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
 				// Set data if it does not exist
@@ -120,21 +132,20 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				tile->data[0] = 0;
 				tile->data[1] = 4;
 			}
-			u8 changed = 0;
+			u8 neighbour_power = 0;
 			u8 curr_power = 0;
-			u16 char_old = tile->chr;
+			u16 char_old = tile->chr; // Used to check for updates.
 			u8 old_dir = tile->data[1];
 			tile->data[1] = 4;
-			u8 char_sel = 0;
-			for(i=0;i<4;i++)
+			u8 char_sel = 0; // Selects the character that the wire will end up using.
+			for(dir=0;dir<4;dir++)
 			{
-				//if((old_dir^1)==i) continue;
-				changed = is_tile_active(ntiles[i],curr_power,i^1);
-				if(can_tile_active(ntiles[i])) char_sel |= 1<<i;
-				if(changed > curr_power)
+				neighbour_power = is_tile_active(ntiles[dir],curr_power,OPPOSITE(dir));
+				if(can_tile_active(ntiles[dir])) char_sel |= 1<<dir;
+				if(neighbour_power > curr_power)
 				{
-					curr_power = changed;
-					tile->data[1] = i^1;
+					curr_power = neighbour_power;
+					tile->data[1] = OPPOSITE(dir);
 				}
 			}
 			tile->chr = wirium_chars[char_sel];
@@ -142,45 +153,40 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			if(curr_power>0 && ((fg&7)+8)!=fg)
 			{
 				tile->col = (fg&7)+8;
-				add_tile(x,y,uidx,tile,1);
+				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			} else if(curr_power==0 && (fg&7)!=fg)
 			{
 				tile->col = (fg&7);
-				add_tile(x,y,uidx,tile,1);
+				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			} else if(tile->chr != char_old)
 			{
-				add_tile(x,y,uidx,tile,1);
+				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF;
 			}
 			return 0; } break;
 		case TILE_PNAND: {
 			if(!is_server) return 0;
 			int j = 0;
-			for(i=0;i<4;i++)
+			for(dir=0;dir<4;dir++)
 			{
-				// Check for output direction
-				if(i+24 == tile->chr) continue;
-				printf("%d %d: Checking position %d\n",x,y,i);
+				if(PNAND_CHR(dir) == tile->chr) continue;
 
-				if(find_tile_by_type(ntiles[i],TILE_WALL) ||
-				   is_tile_active(ntiles[i], 0, 4)>0)
-				{
-					printf("%d %d: I PNANDed at position %d\n",x,y,i);
+				if(find_tile_by_type(ntiles[dir],TILE_WALL) ||
+				   is_tile_active(ntiles[dir], 0, OPPOSITE(dir))>0)
 					j++;
-				}
 			}
 			if((j==1 || j==2) && fg > 0)
 			{
 				tile->col = (fg<<4);
-				add_tile(x,y,uidx,tile,1);
+				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			else if(!(j==1 || j==2) && bg > 0)
 			{
 				tile->col = bg;
-				add_tile(x,y,uidx,tile,1);
+				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
 			return 0; } break;
@@ -203,7 +209,6 @@ void handle_physics(map_t *map)
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{
-		// if(!is_server) printf("Got update on %d,%d",x,y);
 		changes++;
 		// iterate over all tiles, including underones
 		tile = map_get_tile_ref(map,x,y);
