@@ -38,6 +38,7 @@ pblocklist_t *blocklist;
 #define OPPOSITE(a) ((a)^1)
 #define CHR_PNAND(a) ((a)-24)
 #define PNAND_CHR(a) ((a)+24)
+#define MAXIMUM_POWER 15
 
 void add_tile(s32 x, s32 y, u8 uidx, tile_t *tile, u8 copy)
 {
@@ -75,13 +76,21 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 		{
 			case TILE_WIRE: {
 				if(out->datalen != 2) break;
-				u8 max_power = (out->data[0] - 1);
-				if((dir<4 && out->data[1] == (OPPOSITE(dir))) || max_power>31) return 0;
-				return max_power;
+				u8 out_power = (out->data[0] - 1);
+				if((dir<4 && out->data[1] == (OPPOSITE(dir))) || out_power>MAXIMUM_POWER) return 0;
+				return out_power;
 				break; }
 			case TILE_PNAND: {
 				if(out->col > 15 && ((dir > 3) || (CHR_PNAND(out->chr)==dir)))
-					return 15;
+					return MAXIMUM_POWER;
+				break; }
+			case TILE_CROSSER: {
+				if(out->datalen != 4) break;
+				u8 offset = dir & 2;
+				u8 out_dir = out->data[offset+1];
+				u8 out_power = out->data[offset];
+				if((dir<4 && dir == OPPOSITE(out_dir)) || out_power > MAXIMUM_POWER) return 0;
+				return out_power;
 				break; }
 		}
 		out = out->under;
@@ -184,6 +193,41 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			else if(!(j==1 || j==2) && bg > 0)
 			{
 				tile->col = bg;
+				SELF_ADD_TILE;
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+			}
+			return 0; } break;
+		case TILE_CROSSER: {
+			if(!is_server) return 0;
+			if(tile->datalen != 4) // Fix the data, if corrupted.
+			{
+				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
+				// Set data if it does not exist
+				tile->data = malloc(4);
+				tile->datalen = 4;
+				tile->data[1] = 4;
+				tile->data[3] = 4;
+			}
+			u8 neighbour_power = 0;
+			u8 old_d1 = tile->data[1];
+			u8 old_d3 = tile->data[3];
+			tile->data[0] = 0;
+			tile->data[1] = 4;
+			tile->data[2] = 0;
+			tile->data[3] = 4;
+			u8 changed = 0;
+			for(dir=0;dir<4;dir++)
+			{
+				u8 offset = dir & 2;
+				neighbour_power = is_tile_active(ntiles[dir],tile->data[offset],OPPOSITE(dir));
+				if(neighbour_power > tile->data[offset])
+				{
+					tile->data[offset] = neighbour_power;
+					tile->data[offset+1] = OPPOSITE(dir);
+				}
+			}
+			if(old_d1 != tile->data[1] || old_d3 != tile->data[3])
+			{
 				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
