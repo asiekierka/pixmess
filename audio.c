@@ -4,7 +4,6 @@
 /*
 
 Differences from reference DFPWM implementation:
-- Samples are unsigned.
 - Samples are 16-bit.
 - Antijerk filter follows the C implementation.
 - Compression when equal and strengthless MIGHT be around the other way.
@@ -24,7 +23,7 @@ inline void dfpwm_update_model(int *q, int *s, int ri, int rd, int lt, int t)
 	int st, sr;
 	if(t == lt)
 	{
-		st = 0xFF;
+		st = 0x3FFF;
 		sr = ri;
 	} else {
 		st = 0x00;
@@ -32,13 +31,13 @@ inline void dfpwm_update_model(int *q, int *s, int ri, int rd, int lt, int t)
 	}
 	
 	// adjust charge
-	int nq = *q + ((*s * (t-*q) + 0x80)>>8);
+	int nq = *q + ((*s * (t-*q) + 0x2000)>>14);
 	if(nq == *q && nq != t)
 		nq += (t ? 1 : -1);
 	*q = nq;
 	
 	// adjust strength
-	int ns = *s + ((sr * (st-*s) + 0x80)>>8);
+	int ns = *s + ((sr * (st-*s) + 0x2000)>>14);
 	if(ns == *s && ns != st)
 		ns += (st ? 1 : -1);
 	*s = ns;
@@ -46,9 +45,9 @@ inline void dfpwm_update_model(int *q, int *s, int ri, int rd, int lt, int t)
 
 inline int dfpwm_compress_bit(int *q, int *s, int ri, int rd, int *lt, int v)
 {
-	int t = (v < *q || v == 0)
-		? 0x0000
-		: 0xFFFF;
+	int t = (v < *q || v == -0x8000)
+		? -0x8000
+		: 0x7FFF;
 	
 	dfpwm_update_model(q,s,ri,rd,*lt,t);
 	*lt = t;
@@ -56,34 +55,37 @@ inline int dfpwm_compress_bit(int *q, int *s, int ri, int rd, int *lt, int v)
 	return t;
 }
 
-inline int dfpwm_decompress_bit(int *q, int *s, int ri, int rd, int *lt, int *fq, int bit)
+inline int dfpwm_decompress_bit(int *q, int *s, int ri, int rd, int *lt, float *fq, float *fq2, int bit)
 {
-	int t = bit ? 0xFFFF : 0x0000;
+	int t = bit ? 0x7FFF : -0x8000;
 	
 	int lq = *q;
 	dfpwm_update_model(q,s,ri,rd,*lt,t);
+	int ret = *q;
 	
 	// antijerk
-	int ret = (t == *lt)
-		? *q
-		: ((*q+lq)>>1);
+	if(t != *lt)
+		*fq2 = (lq-ret);
+	else
+		*fq2 *= 0.999f;
+	ret += *fq2;
 	
 	// low pass filter
-	*fq = (100 * (ret-*fq) + 0x80)>>8;
+	*fq += (ret-*fq) * 0.5f;
 	ret = *fq;
 	
 	*lt = t;
 	
-	if(ret < 0x0000)
-		ret = 0x0000;
-	if(ret >= 0xFFFF)
-		ret = 0xFFFF;
+	if(ret < -0x8000)
+		ret = 0x8000;
+	if(ret >= 0x7FFF)
+		ret = 0x7FFF;
 	
 	return ret;
 }
 
 // NOTE: len is in compressed bytes!
-void dfpwm_compress(int *q, int *s, int ri, int rd, int *lt, int len, u16 *rawbuf, u8 *cmpbuf)
+void dfpwm_compress(int *q, int *s, int ri, int rd, int *lt, int len, s16 *rawbuf, u8 *cmpbuf)
 {
 	int i,j;
 	
@@ -104,7 +106,7 @@ void dfpwm_compress(int *q, int *s, int ri, int rd, int *lt, int len, u16 *rawbu
 	}
 }
 
-void dfpwm_decompress(int *q, int *s, int ri, int rd, int *lt, int *fq, int len, u16 *rawbuf, u8 *cmpbuf)
+void dfpwm_decompress(int *q, int *s, int ri, int rd, int *lt, float *fq, float *fq2, int len, s16 *rawbuf, u8 *cmpbuf)
 {
 	int i,j;
 	
@@ -114,14 +116,14 @@ void dfpwm_decompress(int *q, int *s, int ri, int rd, int *lt, int *fq, int len,
 	{
 		d = *(cmpbuf++);
 		
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x01);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x02);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x04);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x08);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x10);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x20);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x40);
-		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,d&0x80);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x01);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x02);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x04);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x08);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x10);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x20);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x40);
+		*(rawbuf++) = dfpwm_decompress_bit(q,s,ri,rd,lt,fq,fq2,d&0x80);
 	}
 	
 }
@@ -177,12 +179,13 @@ int audio_stealchunk(int len, s16 *buf)
 // TODO: refactor it to something similar to that which is above
 FILE *autest = NULL;
 
-int dfp_q = 0x8000;
+int dfp_q = 0x0000;
 int dfp_s = 0;
-int dfp_fq = 0;
+float dfp_fq = 0.0f;
+float dfp_fq2 = 0.0f;
 int dfp_lt = 0;
-int dfp_ri = 7;
-int dfp_rd = 20;
+int dfp_ri = 420;
+int dfp_rd = 3500;
 int audio_stealchunk(int len, s16 *buf)
 {
 	if(autest == NULL)
@@ -203,7 +206,7 @@ int audio_stealchunk(int len, s16 *buf)
 	int i,j;
 	
 	u8 tcmp;
-	u16 traw[8];
+	s16 traw[8];
 	
 	for(i = 0; i < len/8; i++)
 	{
@@ -212,15 +215,13 @@ int audio_stealchunk(int len, s16 *buf)
 		{
 			traw[j] = 0;
 			fread(&traw[j], 2, 1, autest);
-			traw[j] ^= 0x8000;
 		}
 		
 		dfpwm_compress(&dfp_q, &dfp_s, dfp_ri, dfp_rd, &dfp_lt, 1, traw, &tcmp);
-		dfpwm_decompress(&dfp_q, &dfp_s, dfp_ri, dfp_rd, &dfp_lt, &dfp_fq, 1, traw, &tcmp);
+		dfpwm_decompress(&dfp_q, &dfp_s, dfp_ri, dfp_rd, &dfp_lt, &dfp_fq, &dfp_fq2, 1, traw, &tcmp);
 		
 		for(j = 0; j < 8; j++)
 		{
-			traw[j] ^= 0x8000;
 			*(buf++) = traw[j];
 			*(buf++) = traw[j];
 		}

@@ -250,15 +250,15 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 	u8 *v = buf_raw;
 	
 	// load the header
-	if(*(u32 *)v != (u32)0x1A571ECE)
+	if(read32le(v) != (u32)0x1A571ECE)
 	{
-		fprintf(stderr, "ERROR: incorrect magic number %08X\n", *(u32 *)v);
+		fprintf(stderr, "ERROR: incorrect magic number %08X\n", read32le(v));
 		free(buf_raw);
 		return NULL;
 	}
 	v += 4;
 	
-	int version = *(u16 *)v;
+	int version = read16le(v);
 	v += 2;
 	
 	if(version < LAYER_LOWEST_VERSION || version > LAYER_VERSION)
@@ -302,7 +302,7 @@ layer_t *layer_unserialise(u8 *buf_cmp, int rawlen, int cmplen)
 			
 			if(flags&MAP_FLAG_U16CHAR)
 			{
-				t->chr = *(u16 *)v;
+				t->chr = read16le(v);
 				v += 2;
 			} else {
 				t->chr = *(v++);
