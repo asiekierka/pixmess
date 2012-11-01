@@ -80,10 +80,8 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 				return max_power;
 				break; }
 			case TILE_PNAND: {
-				if(out->col > 15 && ((dir>3) || (out->CHR_PNAND(chr))==dir))
-				{
+				if(out->col > 15 && ((dir > 3) || (CHR_PNAND(out->chr)==dir)))
 					return 15;
-				}
 				break; }
 		}
 		out = out->under;

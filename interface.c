@@ -122,7 +122,7 @@ void verify_tile()
 	u32 allowed_colors = tile_get_allowed_colors(*drawing_tile);
 
 	assert(ac_length>0);
-	u16 i;
+	s16 i;
 	tofix=1;
 	for(i=0;i<ac_length;i++)
 		if(allowed_chars[i] == drawing_tile->chr) tofix=0;
@@ -130,13 +130,20 @@ void verify_tile()
 	
 	int dtbg = drawing_tile->col>>4;
 	int dtfg = drawing_tile->col&15;
+
+	// Intelligent color fixes:
+	if(!TILE_ALLOWED_FG(dtfg,allowed_colors) && TILE_ALLOWED_FG(dtbg,allowed_colors))
+		dtfg = dtbg;
+	if(!TILE_ALLOWED_BG(dtbg,allowed_colors) && TILE_ALLOWED_BG(dtfg,allowed_colors))
+		dtbg = dtfg;
+
 	if(!TILE_ALLOWED_BG(dtbg,allowed_colors))
-		for(i=0;i<16;i++)
+		for(i=15;i>=0;i--)
 			if(TILE_ALLOWED_BG(i,allowed_colors)) { dtbg = i; break; }
-	
 	if(!TILE_ALLOWED_FG(dtfg,allowed_colors))
-		for(i=0;i<16;i++)
+		for(i=15;i>=0;i--)
 			if(TILE_ALLOWED_FG(i,allowed_colors)) { dtfg = i; break; }
+
 	drawing_tile->col = ((dtbg&15)<<4)|(dtfg&15);
 }
 
