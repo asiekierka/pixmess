@@ -92,6 +92,10 @@ u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 				if((dir<4 && dir == OPPOSITE(out_dir)) || out_power > MAXIMUM_POWER) return 0;
 				return out_power;
 				break; }
+			case TILE_PLATE: {
+				if(out->datalen != 1) break;
+				return out->data[0]>0?MAXIMUM_POWER:0;
+				break; }
 		}
 		out = out->under;
 	}
@@ -231,6 +235,10 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				SELF_ADD_TILE;
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
+			return 0; } break;
+		case TILE_PLATE: {
+			if(!is_server) return 0;
+
 			return 0; } break;
 	}
 	
