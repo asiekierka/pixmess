@@ -4,6 +4,17 @@
 player_t *players[PLAYER_AMOUNT];
 u8 players_set[PLAYER_AMOUNT];
 
+u8 player_is_occupied(s32 x, s32 y)
+{
+	u16 i = 0;
+	for(;i<PLAYER_AMOUNT;i++)
+	{
+		if(players[i]->x == x && players[i]->y == y)
+			return 1;
+	}
+	return 0;
+}
+
 player_t *player_get(u16 id)
 {
 	if((u32)id>=PLAYER_AMOUNT) return NULL;

@@ -9,6 +9,7 @@
 
 extern player_t *player;
 
+u8 player_is_occupied(s32 x, s32 y);
 player_t *player_get(u16 id);
 void player_new(u16 id);
 void player_set(u16 id, player_t *player);
