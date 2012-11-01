@@ -90,6 +90,7 @@ u8 can_tile_active(tile_t *tile)
 
 int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 {
+	if(map == NULL || tile == NULL) return -1;
 	//printf("Attempting update on %i,%i,%i\n",x,y,uidx);
 	
 	// assuming map != NULL
@@ -112,7 +113,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			if(!is_server) return 0;
 			if(tile->datalen != 2)
 			{
-				if(tile->datalen > 0) free(tile->data);
+				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
 				// Set data if it does not exist
 				tile->data = malloc(2);
 				tile->datalen = 2;
@@ -153,7 +154,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF;
 			}
-			return 0; }
+			return 0; } break;
 		case TILE_PNAND: {
 			if(!is_server) return 0;
 			int j = 0;
@@ -182,7 +183,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 				add_tile(x,y,uidx,tile,1);
 				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
-			return 0; }
+			return 0; } break;
 	}
 	
 	return 0;
