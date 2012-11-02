@@ -271,7 +271,6 @@ void handle_physics(map_t *map)
 	u8 uidx;
 	u32 changes = 0;
 	int is_server = (map == server_map);
-	
 	// Loopty loop
 	while(map_get_next_update(map,&lidx,&x,&y))
 	{

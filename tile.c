@@ -6,7 +6,7 @@
 // Vertical axis is the block being put.
 // Horizontal axis is the one below it.
 const u8 tile_stack_data[TILE_TYPES*TILE_TYPES] = {
-//	Du Fl Wa Ro Wi P- Cr Pl
+//	Du Fl Wa Ro Wi P- Cr Pl (( On/What ))
 	0, 0, 0, 0, 0, 0, 0, 0,	// Dummy
 	1, 0, 0, 0, 0, 0, 0, 0,	// Floor
 	1, 1, 0, 0, 0, 0, 0, 0,	// Wall

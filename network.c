@@ -1361,7 +1361,7 @@ void net_update()
 	net_send(np, &net_player, 0);
 	
 	// Update some stuff!
-	handle_physics(client_map);
+	// handle_physics(client_map);
 }
 
 void server_update()
@@ -1476,7 +1476,7 @@ void server_update()
 	}
 	
 	// Update some stuff!
-	handle_physics(server_map);
+	// handle_physics(server_map);
 }
 
 int net_init(char *addr, int port)

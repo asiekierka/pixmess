@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 			
 		frame_counter++;
 
-		if(!is_server) handle_physics(client_map);
+		if(!is_server && ((frame_counter%WIRIUM_DIVISOR) == 0)) handle_physics(client_map);
 
 		// constant ~30FPS, rule from old 64pixels
 		// TODO: get this to 33ms rather than 30ms
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 			sfp_delay(10);
 		}
 
-		if(is_server) handle_physics(server_map);
+		if(is_server && ((frame_counter%WIRIUM_DIVISOR) == 0)) handle_physics(server_map);
 		
 		sfp_event_tick();
 	}
