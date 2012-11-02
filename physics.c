@@ -148,12 +148,13 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			u16 char_old = tile->chr; // Used to check for updates.
 			u8 old_dir = tile->data[1];
 			tile->data[1] = 4;
+			u8 old_power = tile->data[0];
 			u8 char_sel = 0; // Selects the character that the wire will end up using.
 			for(dir=0;dir<4;dir++)
 			{
 				neighbour_power = is_tile_active(ntiles[dir],curr_power,OPPOSITE(dir));
 				if(can_tile_active(ntiles[dir])) char_sel |= 1<<dir;
-				if(neighbour_power > curr_power)
+				if(neighbour_power >= curr_power)
 				{
 					curr_power = neighbour_power;
 					tile->data[1] = OPPOSITE(dir);
@@ -174,8 +175,10 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			} else if(tile->chr != char_old)
 			{
 				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF;
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			}
+			if(old_dir != tile->data[1] || old_power != tile->data[0])
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
 			return 0; } break;
 		case TILE_PNAND: {
 			if(!is_server) return 0;

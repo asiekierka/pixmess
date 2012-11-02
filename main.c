@@ -265,14 +265,26 @@ int main(int argc, char *argv[])
 			}
 			
 			if(!ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y()))
+			{
 				sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
-			
+				#ifdef DEBUG
+					s32 bx = get_rootx()+((sfp_event_mouse_x())/16);
+					s32 by = get_rooty()+((sfp_event_mouse_y())/16);
+					tile_t tile = server_map->f_get_tile(server_map,bx,by);
+					u8 ha = -1;
+					u8 ha2 = -1;
+					if(tile.datalen>0) ha=tile.data[0];
+					if(tile.datalen>1) ha2=tile.data[1];
+					sfp_printf_2x(0,0,0x1F,0,"%d, %d, %d",tile.type,ha,ha2);
+				#endif
+				// That code prints out some wire data for debugging.
+			}
 			sfp_render_end();
 		}
 			
 		frame_counter++;
 
-		handle_physics(client_map);
+		if(!is_server) handle_physics(client_map);
 
 		// constant ~30FPS, rule from old 64pixels
 		// TODO: get this to 33ms rather than 30ms

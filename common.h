@@ -22,6 +22,7 @@
 #include "misc.h"
 #include "tile.h"
 
+// #define DEBUG
 // TODO shift into the right location
 void write16le(u16 data, u8 *v);
 void write32le(u32 data, u8 *v);

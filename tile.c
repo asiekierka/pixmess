@@ -6,14 +6,15 @@
 // Vertical axis is the block being put.
 // Horizontal axis is the one below it.
 const u8 tile_stack_data[TILE_TYPES*TILE_TYPES] = {
+//	Du Fl Wa Ro Wi P- Cr Pl
 	0, 0, 0, 0, 0, 0, 0, 0,	// Dummy
 	1, 0, 0, 0, 0, 0, 0, 0,	// Floor
 	1, 1, 0, 0, 0, 0, 0, 0,	// Wall
 	1, 1, 1, 0, 1, 1, 1, 1,	// Roof
-	1, 1, 1, 0, 0, 1, 0, 0,	// Wire
-	1, 1, 1, 0, 1, 0, 0, 0,	// P-NAND
-	1, 1, 1, 0, 1, 0, 0, 0,	// Crosser
-	1, 1, 1, 0, 1, 0, 0, 0	// Plate
+	1, 1, 1, 0, 0, 0, 0, 0,	// Wire
+	1, 1, 1, 0, 0, 0, 0, 0,	// P-NAND
+	1, 1, 1, 0, 0, 0, 0, 0,	// Crosser
+	1, 1, 1, 0, 0, 0, 0, 0	// Plate
 };
 
 const u16 tile_preview_data[TILE_TYPES*2] = {
