@@ -135,12 +135,6 @@ enum {
 	SFP_KEY_MENU,
 };
 
-// uhh, this is pretty bad...
-// this is likely to turn the code to crap.
-// therefore, it's dummied out. --GM
-//define sfp_event_mousex sfp_event_mouse_x
-//define sfp_event_mousey sfp_event_mouse_y
-
 void sfp_event_keywait(int key, int time);
 int sfp_event_getkeywait(int key);
 
