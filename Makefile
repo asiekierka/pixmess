@@ -7,20 +7,21 @@
 # Yes, I have copied the lua/SDL/zlib stuff into dirs.
 # --GM
 
-LIBS = `sdl-config --libs` -lz -llua
+# ADD -llua if needed
+LIBS = `sdl-config --libs` -lz
 CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable $(CFLAGS_EXTRA)
 LDFLAGS = -g $(LDFLAGS_EXTRA)
 BINNAME = pixmess
-PLATFORM = sdl
-RENDERER = $(PLATFORM)
 
-OBJS = main.o event.o event_$(PLATFORM).o fixme.o lua.o map.o misc_$(PLATFORM).o player.o \
-	render.o render_$(RENDERER).o tile.o interface.o network.o client.o server.o \
-	map_rw.o physics.o chat.o audio.o audio_$(PLATFORM).o
+OBJS = main.o event.o fixme.o lua.o map.o player.o render.o tile.o interface.o \
+	network.o client.o server.o map_rw.o physics.o chat.o audio.o
+
+# Platform-specific!!!
+OBJS += misc_sdl.o audio_sdl.o render_sdl.o event_sdl.o
 
 INCLUDES = common.h render.h misc.h render_data.h player.h tile.h event.h map.h \
 	interface.h network.h client.h server.h types.h lua.h physics.h chat.h \
-	audio.h
+	audio.h config.h
 all: $(BINNAME)
 
 $(BINNAME): $(OBJS)
