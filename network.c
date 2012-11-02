@@ -1005,6 +1005,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			
 			net_pack(np, PKT_LAYER_END);
 			printf("sent: %i -> %i\n", rawlen, cmplen);
+			free(buffer);
 		} break;
 		case PKT_LAYER_START:
 			break;

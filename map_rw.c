@@ -110,6 +110,7 @@ u8 layer_save(map_t *map, layer_t *layer)
 	fwrite(data, cmplen, 1, file);
 	
 	fclose(file);
+	free(data);
 	return 0;
 }
 
