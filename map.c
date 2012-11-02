@@ -429,6 +429,8 @@ map_t *map_new(u32 layercount)
 
 void layer_unload(map_t *map, int i)
 {
+	if(map==NULL) return;
+
 	map->layers[i].refcount = 0;
 	
 	if(map->layers[i].data == NULL)
@@ -442,7 +444,10 @@ void layer_unload(map_t *map, int i)
 
 int map_find_unused_layer(map_t *map)
 {
+	if(map==NULL) return -1;
+
 	u16 i;
+
 	for(i=0;i<map->layer_count;i++)
 		if(map->layers[i].data == NULL)
 			return i;
@@ -459,6 +464,8 @@ int map_find_unused_layer(map_t *map)
 
 int map_find_good_layer(map_t *map, s32 x, s32 y)
 {
+	if(map==NULL) return -1;
+
 	u16 i;
 	
 	for(i=0;i<map->layer_count;i++)
