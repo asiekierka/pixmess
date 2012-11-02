@@ -170,7 +170,6 @@ int main(int argc, char *argv[])
 	char *net_addr = NULL;
 	int net_port = 0;
 
-	int is_server = 0;
 	int no_display = 0;
 	int no_self_player = 0;
 	
@@ -240,11 +239,7 @@ int main(int argc, char *argv[])
 	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC) || termbysig))
 	{
-		if(player == NULL)
-		{
-			player = net_player.player;
-			if(player != NULL) player_set(PLAYER_SELF, player);
-		}
+		player = net_player.player;
 	
 		if(!no_display)
 		{

@@ -238,7 +238,20 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			return 0; } break;
 		case TILE_PLATE: {
 			if(!is_server) return 0;
-
+			if(tile->datalen != 1) // Fix the data, if corrupted.
+			{
+				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
+				tile->data = malloc(1); tile->datalen = 1;
+				tile->data[0] = 0;
+			}
+			u8 prev_plate = tile->data[0];
+			u8 new_plate = player_is_occupied(x,y);
+			if(new_plate != prev_plate)
+			{
+				tile->data[0] = new_plate;
+				SELF_ADD_TILE;
+				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+			}
 			return 0; } break;
 	}
 	

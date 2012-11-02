@@ -91,6 +91,8 @@ char *net_pktstr_s2c[128] = {
 	NULL, NULL, NULL, NULL, "1", "1", "2", "s",
 };
 
+int is_server = 0;
+
 // client stuff
 int net_initialised = 0;
 int net_id = PLAYER_NONE;
@@ -340,8 +342,6 @@ void net_layer_release(s32 x, s32 y)
 
 void net_entity_movement(s32 dx, s32 dy)
 {
-	//printf("net_entity_movement: %d,%d\n", dx, dy);
-	
 	if(net_player.sockfd != FD_LOCAL_IMMEDIATE)
 	{
 		u8 dir;
@@ -403,6 +403,29 @@ void net_server_kick(u16 id, char *msg)
 	
 	net_pack(np, PKT_KICK, strlen(msg), msg);
 	np->flags |= NPF_KILLME;
+}
+
+u8 net_player_is_occupied(s32 x, s32 y)
+{
+	int i;
+	if(is_server)
+	{
+		for(i=0;i<65536;i++)
+		{
+			if(server_players[i] != NULL && server_players[i]->player->x==x && server_players[i]->player->y==y)
+				return 1;
+		}
+	}
+	else
+	{
+		printf("WARNING: I am not aware of any piece of code that would check for occupation in client. PLEASE VERIFY");
+		for(i=0;i<65536;i++)
+		{
+			if(players[i] != NULL && players[i]->x==x && players[i]->y==y)
+				return 1;
+		}
+	}
+	return 0;
 }
 
 void net_player_destroy_server(u16 id)
@@ -510,7 +533,7 @@ void net_handle_s2c(netpacket_t *pkt)
 {
 	int i;
 	
-	printf("CLIENT: packet %02X\n", pkt->cmd);
+	// printf("CLIENT: packet %02X\n", pkt->cmd);
 	
 	switch(pkt->cmd)
 	{
@@ -838,7 +861,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 #define C2S_NEED_NOLOGIN if(np->flags & NPF_LOGGEDIN) break;
 	int i;
 	
-	printf("SERVER: %04X: packet %02X\n", id, pkt->cmd);
+	// printf("SERVER: %04X: packet %02X\n", id, pkt->cmd);
 	
 	switch(pkt->cmd)
 	{
@@ -922,6 +945,7 @@ void net_handle_c2s(int id, netplayer_t *np, netpacket_t *pkt)
 			
 			np->player->x += x;
 			np->player->y += y;
+			server_map->f_set_update_n(server_map, np->player->x, np->player->y, 0);
 			
 			for(i = 0; i < server_player_top; i++)
 				if(i != id && server_players[i] != NULL)

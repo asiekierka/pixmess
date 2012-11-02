@@ -30,6 +30,7 @@
 // hypothetically, the most accurate singleplayer mode.
 #define FD_LOCAL_SOCKETPAIR -3
 
+extern int is_server;
 extern int net_id;
 extern netplayer_t net_player;
 extern int player_top;
@@ -48,6 +49,8 @@ layer_t *net_layer_request(s32 x, s32 y);
 int net_player_id();
 void net_layer_release(s32 x, s32 y);
 void net_entity_movement(s32 dx, s32 dy);
+
+u8 net_player_is_occupied(s32 x, s32 y);
 
 void net_map_save();
 
