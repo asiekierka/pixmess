@@ -187,7 +187,7 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
 			{
 				if(PNAND_CHR(dir) == tile->chr) continue;
 
-				if(find_tile_by_type(ntiles[dir],TILE_WALL) ||
+				if((!can_tile_active(ntiles[dir]) && find_tile_by_type(ntiles[dir],TILE_WALL)) ||
 				   is_tile_active(ntiles[dir], 0, OPPOSITE(dir))>0)
 					j++;
 			}
