@@ -118,8 +118,12 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 	if(map == NULL || tile_old == NULL) return -1;
 	int is_server = (map == server_map);
 
+	// Make local copy of tile.
 	tile_t *tile = malloc(sizeof(*tile_old));
 	memcpy(tile,tile_old,sizeof(*tile_old));
+
+	tile->data = malloc(sizeof(u8)*tile->datalen);
+	memcpy(tile->data,tile_old->data,sizeof(u8)*tile->datalen);
 
 	int i = 0;
 	int dir = 0;
