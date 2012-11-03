@@ -113,10 +113,13 @@ u8 can_tile_active(tile_t *tile)
 	return 0;
 }
 
-int handle_physics_tile(map_t *map, int x, int y, tile_t *tile, u8 uidx)
+int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 {
-	if(map == NULL || tile == NULL) return -1;
+	if(map == NULL || tile_old == NULL) return -1;
 	int is_server = (map == server_map);
+
+	tile_t *tile = malloc(sizeof(*tile_old));
+	memcpy(tile,tile_old,sizeof(*tile_old));
 
 	int i = 0;
 	int dir = 0;
@@ -267,7 +270,7 @@ void handle_physics(map_t *map)
 
 	s32 x, y;
 	int lidx = 0;
-	tile_t *tile;
+	tile_t *tile = NULL;
 	u8 uidx;
 	u32 changes = 0;
 	int is_server = (map == server_map);
@@ -281,11 +284,9 @@ void handle_physics(map_t *map)
 		
 		while(tile != NULL)
 		{
-			tile_t new_tile = *tile;
-			
-			if(tile_active(new_tile))
+			if(tile_active(*tile))
 			{
-				int handle_ret = handle_physics_tile(map, x, y, &new_tile, uidx);
+				int handle_ret = handle_physics_tile(map, x, y, tile, uidx);
 				switch(handle_ret)
 				{
 					default:
@@ -298,7 +299,7 @@ void handle_physics(map_t *map)
 						break;
 				}
 				x++;
-			}			
+			}
 			tile = tile->under;
 			uidx++;
 			
