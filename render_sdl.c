@@ -279,6 +279,8 @@ void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency)
 					*(v++) = bg;
 					*(v2++) = bg;
 					*(v2++) = bg;
+				} else if (transparency) {
+					v+=2; v2+=2;
 				}
 			
 				c <<= 1;

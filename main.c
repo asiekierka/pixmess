@@ -88,16 +88,12 @@ void display(player_t *p)
 				tilestack[tilestack_pos+1] = tilestack[tilestack_pos]->under;
 				tilestack_pos++;
 			}
-			if(tilestack_pos>0)
-			{
-				printf("%d\n",tilestack_pos);
-			}
 			tile_t* current_tile;
 			while(tilestack_pos>=0)
 			{
 				current_tile = tilestack[tilestack_pos];
 				sfp_putc_block_2x(i,j,(current_tile->col>>4),(current_tile->col&15),
-						tile.chr | (tile_transparent(*current_tile)?32768:0));
+						current_tile->chr | (tile_transparent(*current_tile)?32768:0));
 				tilestack_pos--;
 			}
 			rx++;

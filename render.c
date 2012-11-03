@@ -66,7 +66,6 @@ void sfp_putc_##putctype(int x, int y, u8 bg, u8 fg, u16 chr) \
 	u32 realfg = fgp[2] | (fgp[1] << 8) | (fgp[0] << 16); \
 	u32 realbg = bgp[2] | (bgp[1] << 8) | (bgp[0] << 16); \
 	u8 *fptr = &font[(chr & 0x7FFF)*8]; \
-	if(chr>=32768) printf("TRANSPARENCY!!! %d\n",chr); \
 	sfp_render_putc_##putctype(x, y, realbg, realfg, fptr, (((chr&32768)&&(bg==0))?1:0)); \
 } \
 \
