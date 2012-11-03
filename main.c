@@ -26,6 +26,10 @@ player_t *player = NULL;
 u8 movement_wait;
 u64 frame_counter;
 
+#define MODE_UI 1
+#define MODE_CHAT 2
+u8 mode;
+
 void player_move(s8 dx, s8 dy)
 {
 	s32 newx = player->x+dx;
@@ -252,7 +256,8 @@ int main(int argc, char *argv[])
 	if(!no_self_player) net_login(0x1F, 0x0002, NICKNAME);
 
 	chat_add_msg("DEBUG: Hello!");
-	
+
+	mode = MODE_UI;	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC) || termbysig))
 	{
 		player = net_player.player;
@@ -260,39 +265,43 @@ int main(int argc, char *argv[])
 		if(!no_display)
 		{
 			sfp_render_begin();
-			display(player);
-			if(player != NULL)
+			if(mode==MODE_UI || mode==MODE_CHAT)
+				display(player);
+			if(mode==MODE_UI)
 			{
-				render_ui();
-				
-				if(movement_wait==0)
+				if(player != NULL)
 				{
-					if(sfp_event_key(SFP_KEY_W))
-						player_move(0,-1);
-					if(sfp_event_key(SFP_KEY_S))
-						player_move(0,1);
-					if(sfp_event_key(SFP_KEY_A))
-						player_move(-1,0);
-					if(sfp_event_key(SFP_KEY_D))
-						player_move(1,0);
+					render_ui();
+					
+					if(movement_wait==0)
+					{
+						if(sfp_event_key(SFP_KEY_W))
+							player_move(0,-1);
+						if(sfp_event_key(SFP_KEY_S))
+							player_move(0,1);
+						if(sfp_event_key(SFP_KEY_A))
+							player_move(-1,0);
+						if(sfp_event_key(SFP_KEY_D))
+							player_move(1,0);
+					}
+					else movement_wait--;
 				}
-				else movement_wait--;
-			}
-			
-			if(!ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y()))
-			{
-				sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
-				#ifdef DEBUG
-					s32 bx = get_rootx()+((sfp_event_mouse_x())/16);
-					s32 by = get_rooty()+((sfp_event_mouse_y())/16);
-					tile_t tile = server_map->f_get_tile(server_map,bx,by);
-					u8 ha = -1;
-					u8 ha2 = -1;
-					if(tile.datalen>0) ha=tile.data[0];
-					if(tile.datalen>1) ha2=tile.data[1];
-					sfp_printf_2x(0,0,0x1F,0,"%d, %d, %d",tile.type,ha,ha2);
-				#endif
-				// That code prints out some wire data for debugging.
+				
+				if(!ui_is_occupied(sfp_event_mouse_x(),sfp_event_mouse_y()))
+				{
+					sfp_draw_rect(sfp_event_mouse_x()&~15,sfp_event_mouse_y()&~15,16,16,0xAAAAAA);
+					#ifdef DEBUG
+						s32 bx = get_rootx()+((sfp_event_mouse_x())/16);
+						s32 by = get_rooty()+((sfp_event_mouse_y())/16);
+						tile_t tile = server_map->f_get_tile(server_map,bx,by);
+						u8 ha = -1;
+						u8 ha2 = -1;
+						if(tile.datalen>0) ha=tile.data[0];
+						if(tile.datalen>1) ha2=tile.data[1];
+						sfp_printf_2x(0,0,0x1F,0,"%d, %d, %d",tile.type,ha,ha2);
+					#endif
+					// That code prints out some wire data for debugging.
+				}
 			}
 			sfp_render_end();
 		}
