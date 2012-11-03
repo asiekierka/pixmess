@@ -53,6 +53,7 @@ void net_entity_movement(s32 dx, s32 dy);
 u8 net_player_is_occupied(s32 x, s32 y);
 
 void net_map_save();
+void net_free();
 
 void net_update();
 void server_update();

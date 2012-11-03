@@ -10,7 +10,6 @@
 
 void mkdir_if_none(char* path)
 {
-	// I'm an asshat.
 	// note, all dirs need the execute flag set to be accessible --GM
 #ifdef WIN32
 	mkdir(path);

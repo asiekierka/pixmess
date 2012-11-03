@@ -26,9 +26,11 @@ player_t *player = NULL;
 u8 movement_wait;
 u64 frame_counter;
 
+#define MODE_LOADING 0
 #define MODE_UI 1
 #define MODE_CHAT 2
-u8 mode;
+#define MODE_MENU 3
+u8 mode = MODE_LOADING;
 
 void player_move(s8 dx, s8 dy)
 {
@@ -338,6 +340,7 @@ int main(int argc, char *argv[])
 	
 	// TODO: free stuff w/o having to rely on the OS!
 	// NOTABLE THINGS are maps, layers, players and netplayers.
+	net_free();
 	
 	printf("DONE.\n");
 	

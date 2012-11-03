@@ -1126,6 +1126,14 @@ void net_map_save()
 		map_save(server_map);
 }
 
+void net_free()
+{
+	if(net_player.sockfd == FD_LOCAL_IMMEDIATE)
+		free(client_map);
+	else if(server_sockfd != FD_LOCAL_IMMEDIATE)
+		free(server_map);
+}
+
 void net_recv(netplayer_t *np)
 {
 	// Parse any received packets.

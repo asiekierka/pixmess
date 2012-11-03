@@ -524,7 +524,7 @@ layer_t *map_get_net_layer(map_t *map, s32 x, s32 y)
 	if(i == -1)
 	{
 		fprintf(stderr,"ERROR: Could not find unused layer!\n");
-		fprintf(stderr,"TODO: handle this more gracefully!\n");
+		fprintf(stderr,"TODO: increase size\n");
 		abort();
 	}
 	if(i>=0)
