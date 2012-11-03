@@ -6,8 +6,8 @@
 #define LAYER_WIDTH 64
 #define LAYER_HEIGHT 64
 
-#define LAYER_SIZE_CLIENT 1
-#define LAYER_SIZE_SERVER 128
+#define LAYER_SIZE_CLIENT 16
+#define LAYER_SIZE_SERVER 256
 
  typedef uint64_t u64;
 typedef uint32_t u32;
