@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, sighdl_closenicely);
 #endif
 	
-	if(!no_self_player) net_login(0x1F, 0x0002, "Gamemaster");
+	if(!no_self_player) net_login(0x1F, 0x0002, NICKNAME);
 
 	add_chat_msg("DEBUG: Hello!");
 	
@@ -261,7 +261,6 @@ int main(int argc, char *argv[])
 		{
 			sfp_render_begin();
 			display(player);
-			//if(frame_counter<90) sfp_printf_2x(1*8,2*8,0x1F,0,"Hello %s! You are player %i.", "Gamemaster", PLAYER_SELF);
 			if(player != NULL)
 			{
 				render_ui();

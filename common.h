@@ -23,6 +23,7 @@
 #include "tile.h"
 
 #define WIRIUM_DIVISOR 2
+#define NICKNAME "Gamemaster"
 
 // TODO shift into the right location
 void write16le(u16 data, u8 *v);
