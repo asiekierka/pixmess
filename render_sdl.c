@@ -160,7 +160,7 @@ void sfp_render_render_end()
 // NOTE: THESE VERSIONS REQUIRE THE FOLLOWING CONDITIONS:
 // - the whole box must be in range.
 // - ... i think that's it.
-inline void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
+inline void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency)
 {
 	// calculate screen pointer
 	u32 *v = (uint32_t *)(screen->pixels + screen->pitch*y + 4*x);
@@ -169,21 +169,43 @@ inline void sfp_render_putc_2x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
 	// render!
 	int i,j;
 	int pitchoffs = screen->pitch*2;
-	for(i = 0; i < 8; i++)
+	if(transparency)
 	{
-		u8 c = *(p++);
-		
-		v[ 0] = v[ 1] = v2[ 0] = v2[ 1] = ((c&0x80) ? fg : bg);
-		v[ 2] = v[ 3] = v2[ 2] = v2[ 3] = ((c&0x40) ? fg : bg);
-		v[ 4] = v[ 5] = v2[ 4] = v2[ 5] = ((c&0x20) ? fg : bg);
-		v[ 6] = v[ 7] = v2[ 6] = v2[ 7] = ((c&0x10) ? fg : bg);
-		v[ 8] = v[ 9] = v2[ 8] = v2[ 9] = ((c&0x08) ? fg : bg);
-		v[10] = v[11] = v2[10] = v2[11] = ((c&0x04) ? fg : bg);
-		v[12] = v[13] = v2[12] = v2[13] = ((c&0x02) ? fg : bg);
-		v[14] = v[15] = v2[14] = v2[15] = ((c&0x01) ? fg : bg);
-		
-		v = (u32 *)(((u8 *)v) + pitchoffs);
-		v2 = (u32 *)(((u8 *)v2) + pitchoffs);
+		for(i = 0; i < 8; i++)
+		{
+			u8 c = *(p++);
+			
+			if(c&0x80) v[ 0] = v[ 1] = v2[ 0] = v2[ 1] = fg;
+			if(c&0x40) v[ 2] = v[ 3] = v2[ 2] = v2[ 3] = fg;
+			if(c&0x20) v[ 4] = v[ 5] = v2[ 4] = v2[ 5] = fg;
+			if(c&0x10) v[ 6] = v[ 7] = v2[ 6] = v2[ 7] = fg;
+			if(c&0x08) v[ 8] = v[ 9] = v2[ 8] = v2[ 9] = fg;
+			if(c&0x04) v[10] = v[11] = v2[10] = v2[11] = fg;
+			if(c&0x02) v[12] = v[13] = v2[12] = v2[13] = fg;
+			if(c&0x01) v[14] = v[15] = v2[14] = v2[15] = fg;
+			
+			v = (u32 *)(((u8 *)v) + pitchoffs);
+			v2 = (u32 *)(((u8 *)v2) + pitchoffs);
+		}
+	}
+	else
+	{
+		for(i = 0; i < 8; i++)
+		{
+			u8 c = *(p++);
+			
+			v[ 0] = v[ 1] = v2[ 0] = v2[ 1] = ((c&0x80) ? fg : bg);
+			v[ 2] = v[ 3] = v2[ 2] = v2[ 3] = ((c&0x40) ? fg : bg);
+			v[ 4] = v[ 5] = v2[ 4] = v2[ 5] = ((c&0x20) ? fg : bg);
+			v[ 6] = v[ 7] = v2[ 6] = v2[ 7] = ((c&0x10) ? fg : bg);
+			v[ 8] = v[ 9] = v2[ 8] = v2[ 9] = ((c&0x08) ? fg : bg);
+			v[10] = v[11] = v2[10] = v2[11] = ((c&0x04) ? fg : bg);
+			v[12] = v[13] = v2[12] = v2[13] = ((c&0x02) ? fg : bg);
+			v[14] = v[15] = v2[14] = v2[15] = ((c&0x01) ? fg : bg);
+			
+			v = (u32 *)(((u8 *)v) + pitchoffs);
+			v2 = (u32 *)(((u8 *)v2) + pitchoffs);
+		}
 	}
 }
 
@@ -213,11 +235,11 @@ inline void sfp_render_putc_1x_fast(int x, int y, u32 bg, u32 fg, u8 *p)
 }
 
 // NORMAL VERSIONS.
-void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p)
+void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency)
 {
 	// check if we can do the fast version
 	if(x >= 0 && y >= 0 && x <= screen->w-16 && y <= screen->h-16)
-		return sfp_render_putc_2x_fast(x,y,bg,fg,p);
+		return sfp_render_putc_2x_fast(x,y,bg,fg,p,transparency);
 	
 	// calculate screen pointer
 	u32 *v = (uint32_t *)(screen->pixels + screen->pitch*y + 4*x);
@@ -252,7 +274,7 @@ void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p)
 					*(v++) = fg;
 					*(v2++) = fg;
 					*(v2++) = fg;
-				} else {
+				} else if (!transparency) {
 					*(v++) = bg;
 					*(v++) = bg;
 					*(v2++) = bg;
@@ -268,10 +290,10 @@ void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p)
 	}
 }
 
-void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p)
+void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency)
 {
 	// check if we can do the fast version
-	if(x >= 0 && y >= 0 && x <= screen->w-8 && y <= screen->h-8)
+	if(x >= 0 && y >= 0 && x <= screen->w-8 && y <= screen->h-8 && !transparency)
 		return sfp_render_putc_1x_fast(x,y,bg,fg,p);
 	
 	// calculate screen pointer
@@ -292,16 +314,26 @@ void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p)
 		if(i < miny)
 			v += 8;
 		else
-		for(j = 0; j < 8; j++)
 		{
-			if(j < minx || j >= maxx)
-				v++;
+			if(transparency)
+				for(j = 0; j < 8; j++)
+				{
+					if(!(j < minx || j >= maxx) && (c&128))
+						*v = fg;
+					v++;
+					c <<= 1;
+				}
 			else
-				*(v++) = ((c&128) ? fg : bg);
-			
-			c <<= 1;
+				for(j = 0; j < 8; j++)
+				{
+					if(j < minx || j >= maxx)
+						v++;
+					else
+						*(v++) = ((c&128) ? fg : bg);
+					
+					c <<= 1;
+				}		
 		}
-		
 		v = (u32 *)(((u8 *)v) + pitchoffs);
 	}
 }

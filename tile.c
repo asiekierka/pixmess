@@ -53,6 +53,20 @@ u8 tile_active(tile_t tile)
 	}
 }
 
+u8 tile_transparent(tile_t tile)
+{
+	switch(tile.type)
+	{
+		default:
+			return 0;
+		case TILE_ROOF:
+		case TILE_WIRE:
+		case TILE_CROSSER:
+		case TILE_PLATE:
+			return 1;
+	}
+}
+
 inline u32 tile_get_allowed_colors(tile_t tile)
 {
 	switch(tile.type)

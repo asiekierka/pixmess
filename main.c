@@ -73,19 +73,39 @@ void display(player_t *p)
 	s32 ry = p->y-(SFP_FIELD_HEIGHT)/2;
 	s32 ory = ry;
 	tile_t tile;
+	tile_t* tilestack[64];
+	s8 tilestack_pos;
 	map_layer_set_used_rendered(client_map, rx, ry);
 	for(j=0;j<SFP_FIELD_HEIGHT;j++)
 	{
 		for(i=0;i<SFP_FIELD_WIDTH;i++)
 		{
 			tile = client_map->f_get_tile(client_map,rx,ry);
-			sfp_putc_block_2x(i,j,(tile.col>>4),(tile.col&15),tile.chr);
+			tilestack[0] = &tile;
+			tilestack_pos = 0;
+			while(tile_transparent(*tilestack[tilestack_pos]) && tilestack[tilestack_pos]->under != NULL)
+			{
+				tilestack[tilestack_pos+1] = tilestack[tilestack_pos]->under;
+				tilestack_pos++;
+			}
+			if(tilestack_pos>0)
+			{
+				printf("%d\n",tilestack_pos);
+			}
+			tile_t* current_tile;
+			while(tilestack_pos>=0)
+			{
+				current_tile = tilestack[tilestack_pos];
+				sfp_putc_block_2x(i,j,(current_tile->col>>4),(current_tile->col&15),
+						tile.chr | (tile_transparent(*current_tile)?32768:0));
+				tilestack_pos--;
+			}
 			rx++;
 		}
 		rx = orx;
 		ry++;
 	}
-	
+
 	// Some better player code.
 	for(i = 0; i < player_top; i++)
 	{

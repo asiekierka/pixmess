@@ -11,6 +11,9 @@
 #define SFP_SCREEN_REAL_WIDTH (SFP_SCREEN_WIDTH*16)
 #define SFP_SCREEN_REAL_HEIGHT (SFP_SCREEN_HEIGHT*16)
 
+// flags
+#define SFP_TRANSPARENCY 1
+
 u32 sfp_get_palette(u8 id);
 
 void sfp_draw_rect(int x, int y, int w, int h, u32 col);
@@ -37,8 +40,8 @@ void sfp_printf_2x(int x, int y, int col, int flags, char *fmt, ...);
 void sfp_render_draw_rect(int x, int y, int w, int h, u32 col);
 void sfp_render_fill_rect(int x, int y, int w, int h, u32 col);
 
-void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p);
-void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p);
+void sfp_render_putc_2x(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency);
+void sfp_render_putc_1x(int x, int y, u32 bg, u32 fg, u8 *p, u8 transparency);
 
 int sfp_render_init_video();
 void sfp_render_render_begin();

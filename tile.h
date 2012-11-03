@@ -18,6 +18,8 @@ inline u8 tile_overlay(tile_t tile);
 inline u8 tile_walkable(tile_t tile);
 inline u8 tile_stackable(u8 type, u8 utype);
 inline u8 tile_active(tile_t tile);
+inline u8 tile_transparent(tile_t tile);
+
 enum
 {
 	TILE_DUMMY = 0,
