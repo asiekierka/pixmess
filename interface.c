@@ -8,6 +8,7 @@
 u8 isOn;
 u8 activeUI;
 u8 mouse_left_down;
+u8 maximized = 0;
 
 tile_t *drawing_tile;
 
@@ -23,7 +24,7 @@ inline u8 ui_is_occupied(u16 x, u16 y)
 		case 1:
 			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-128) return 1;
 		case 2:
-			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-152) return 1;
+			if(x<=112 && y>=(SFP_FIELD_HEIGHT*16)-(maximized?15*24+8:6*24+8)) return 1;
 			break;
 		case 3:
 			if(x<=208 && y>=(SFP_FIELD_HEIGHT*16)-66) return 1;
@@ -191,8 +192,6 @@ void render_char_window(void)
 {
 	int lmb = sfp_event_mouse_button(0);
 
-	// 112x152, 4x6 icons + scroll
-	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0x000000);
 	// Drawing
 	int i,tcol,mouse_in;
 	int j,px,py;
@@ -200,7 +199,15 @@ void render_char_window(void)
 	u16 ac_length;
 	u16* allowed_chars = tile_get_allowed_chars(*drawing_tile,&ac_length);
 	if(ac_length<(scrollbar_pos*4)) scrollbar_pos = 0;
-	for(i=0;i<24;i++)
+
+	u8 max_h = 6;
+	if(maximized) max_h = 15; 
+	u16 y_offset = (max_h*24)+8;
+
+	// 112x152, 4x6 icons + scroll
+	sfp_fill_rect(0,SFP_FIELD_HEIGHT*16-y_offset,112,y_offset,0x000000);
+
+	for(i=0;i<4*max_h;i++)
 	{
 		if(i+(scrollbar_pos*4)>=ac_length) break;
 		if(allowed_chars != NULL)
@@ -209,7 +216,7 @@ void render_char_window(void)
 			j = i+(scrollbar_pos*4);
 		if(j>255) break;
 		px = 8+((i%4)*24);
-		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-152);
+		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-y_offset);
 		mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),px-2,py-2,20,20);
 		sfp_putc_2x(px,py,tcol>>4,tcol&15,j);
 		sfp_draw_rect(px-1,py-1,18,18,(mouse_in?0xCCCCCC:(drawing_tile->chr==j?0xAAAAAA:0x555555)));
@@ -220,11 +227,12 @@ void render_char_window(void)
 		}
 	}
 	
-	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-152,112,152);
-	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-152),152,((ac_length+3)/4)-4, mouse_in);
+	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-y_offset,112,y_offset);
+	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-y_offset),y_offset,((ac_length+3)/4)-4, mouse_in);
 
-	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-152,112,152,0xCCCCCC);
+	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-y_offset,112,y_offset,0xCCCCCC);
 }
+
 void render_color_window(void)
 {
 	int lmb = sfp_event_mouse_button(0);
@@ -313,6 +321,11 @@ void render_ui(void)
 	sfp_putc_block_2x(1,SFP_FIELD_HEIGHT,0+COLHL(whichHL,activeUI,1),4+COLHL(whichHL,activeUI,1),84);
 	sfp_putc_block_2x(2,SFP_FIELD_HEIGHT,1+COLHL(whichHL,activeUI,2),7+COLHL(whichHL,activeUI,2),2);
 	sfp_putc_block_2x(3,SFP_FIELD_HEIGHT,0+COLHL(whichHL,activeUI,3),6+COLHL(whichHL,activeUI,3),67);
+
+	// BUTTONS
+	sfp_printf_1x(7*16,SFP_FIELD_HEIGHT*16,maximized?(15*16)+8:(8*16)+15,0,"[Max]");
+	if(inside_rect(mousex,mousey,7*16,SFP_FIELD_HEIGHT*16,40,8) && sfp_event_mouse_button(0) && !mouse_left_down)
+		maximized = 1-maximized;
 
 	// WINDOW
 	switch(activeUI)
