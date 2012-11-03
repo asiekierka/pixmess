@@ -12,6 +12,7 @@
 #define inside_rect(x,y,rx,ry,rw,rh) ((x)>=(rx) && (y)>=(ry) \
 	&& (x)<((rx)+(rw)) && (y)<((ry)+(rh)))
 
+u64 get_current_time();
 void sfp_delay(u32 ms);
 
 #endif /* _MISC_H_ */

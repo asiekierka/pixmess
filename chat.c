@@ -3,25 +3,26 @@
 
 chatmsg_t *messages[MAX_CHAT_MSG];
 
-char* get_chat_msg(int index)
+char* chat_get_msg(int index)
 {
 	if(index>=MAX_CHAT_MSG) return NULL;
 	if(messages[index] == NULL) return NULL;
 	return messages[index]->msg;
 }
 
-void add_chat_msg(char* msg)
+u8 chat_is_visible(int index)
+{
+	if(index>=MAX_CHAT_MSG) return 0;
+	if(messages[index] == NULL) return 0;
+	if((get_current_time() - messages[index]->time)<=CHAT_TIME_VISIBLE) return 1;
+	return 0;
+}
+
+void chat_add_msg(char* msg)
 {
 	u8 i;
-	u64 t;
+	u64 t = get_current_time();
 	
-	// TODO win32-appropriate version (once again, windows sucks)
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	t = (((u64)tv.tv_sec)*(u64)1000000) + (u64)tv.tv_usec;
-	
-	// use t just to shut the compiler up
-	printf("time: %lli\n", (long long int)t);
 	if(messages[MAX_CHAT_MSG-1] != NULL)
 	{
 		for(i=1;i<MAX_CHAT_MSG;i++)

@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 	
 	if(!no_self_player) net_login(0x1F, 0x0002, NICKNAME);
 
-	add_chat_msg("DEBUG: Hello!");
+	chat_add_msg("DEBUG: Hello!");
 	
 	while(!(sfp_event_key(SFP_KEY_APP_QUIT) || sfp_event_key(SFP_KEY_ESC) || termbysig))
 	{

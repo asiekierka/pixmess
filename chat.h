@@ -4,8 +4,9 @@
 #include "common.h"
 
 #define MAX_CHAT_MSG 20
+#define CHAT_TIME_VISIBLE (20*1000000)
 
-void add_chat_msg(char* msg);
-char* get_chat_msg(int count);
+void chat_add_msg(char* msg);
+char* chat_get_msg(int count);
 
 #endif /* _CHAT_H */
