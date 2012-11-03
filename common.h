@@ -22,7 +22,6 @@
 #include "misc.h"
 #include "tile.h"
 
-// #define DEBUG
 #define WIRIUM_DIVISOR 2
 
 // TODO shift into the right location

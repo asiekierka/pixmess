@@ -88,6 +88,28 @@ u16* tile_get_allowed_chars(tile_t tile, u16* length)
 			chars[3] = 27;
 			*length = 4;
 			break; }
+		case TILE_PLATE: {
+			// Magical values!
+			chars[0] = 254;
+			chars[1] = 7;
+			chars[2] = 8;
+			chars[3] = 9;
+			chars[4] = 10;
+			chars[5] = 15;
+			chars[6] = 16;
+			chars[7] = 17;
+			chars[8] = 22;
+			chars[9] = 30;
+			chars[10] = 31;
+			chars[11] = 174;
+			chars[12] = 175;
+			chars[13] = 240;
+			chars[14] = 244;
+			chars[15] = 245;
+			chars[16] = 247;
+			chars[17] = 4;
+			*length = 18;
+			break; }
 		default: {
 			for(i = 0; i < 256; i++)
 				chars[i] = i;
