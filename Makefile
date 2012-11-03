@@ -17,7 +17,7 @@ CFLAGS = -g `sdl-config --cflags` -Wall -Wextra -Wno-unused-parameter -Wno-unuse
 LDFLAGS = -g $(LDFLAGS_EXTRA)
 BINNAME = pixmess
 
-OBJS = main.o event.o fixme.o lua.o map.o player.o render.o tile.o interface.o \
+OBJS = main.o event.o lua.o map.o player.o render.o tile.o interface.o \
 	network.o client.o server.o map_rw.o physics.o chat.o audio.o \
 	$(OBJS_EXTRA)
 
