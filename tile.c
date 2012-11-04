@@ -39,32 +39,36 @@ char* names[TILE_TYPES] = {
 	"Plate"
 };
 
+const u32 tile_flags[TILE_TYPES] = {
+	TILE_WALKABLE,
+	TILE_WALKABLE,
+	0,
+	TILE_OVERLAY | TILE_WALKABLE | TILE_TRANSPARENT,
+	TILE_ACTIVE | TILE_WALKABLE | TILE_TRANSPARENT,
+	TILE_ACTIVE,
+	TILE_ACTIVE | TILE_TRANSPARENT,
+	TILE_ACTIVE | TILE_WALKABLE | TILE_TRANSPARENT
+};
+
+inline u8 tile_overlay(tile_t tile)
+{
+	return (tile_flags[tile.type] & TILE_OVERLAY)?1:0;
+}
+
+inline u8 tile_walkable(tile_t tile)
+{
+	return (tile_flags[tile.type] & TILE_WALKABLE)?1:0;
+}
+
+
 u8 tile_active(tile_t tile)
 {
-	switch(tile.type)
-	{
-		default:
-			return 0;
-		case TILE_WIRE:
-		case TILE_PNAND:
-		case TILE_CROSSER:
-		case TILE_PLATE:
-			return 1;
-	}
+	return (tile_flags[tile.type] & TILE_ACTIVE)?1:0;
 }
 
 u8 tile_transparent(tile_t tile)
 {
-	switch(tile.type)
-	{
-		default:
-			return 0;
-		case TILE_ROOF:
-		case TILE_WIRE:
-		case TILE_CROSSER:
-		case TILE_PLATE:
-			return 1;
-	}
+	return (tile_flags[tile.type] & TILE_TRANSPARENT)?1:0;
 }
 
 inline u32 tile_get_allowed_colors(tile_t tile)
@@ -132,32 +136,6 @@ u16* tile_get_allowed_chars(tile_t tile, u16* length)
 		}
 	}
 	return chars;
-}
-
-inline u8 tile_overlay(tile_t tile)
-{
-	switch(tile.type)
-	{
-		default:
-			return 0;
-		case TILE_ROOF:
-			return 1;
-	}
-}
-
-inline u8 tile_walkable(tile_t tile)
-{
-	switch(tile.type)
-	{
-		default:
-			return 0;
-		case TILE_DUMMY:
-		case TILE_FLOOR:
-		case TILE_ROOF:
-		case TILE_WIRE:
-		case TILE_PLATE:
-			return 1;
-	}
 }
 
 // The below functions do not need modifications for new blocks IN MOST CASES.

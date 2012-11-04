@@ -6,6 +6,11 @@
 #define TILE_ALLOWED_BG(a,b) ((((b)>>16)>>(a))&1)
 #define TILE_ALLOWED_FG(a,b) (((b)>>(a))&1)
 
+#define TILE_ACTIVE 1
+#define TILE_WALKABLE 2
+#define TILE_TRANSPARENT 4
+#define TILE_OVERLAY 8
+
 inline char* tile_get_name(u8 type);
 inline u16 tile_get_preview_char(u8 type);
 inline u8 tile_get_preview_color(u8 type);
