@@ -246,7 +246,8 @@ int main(int argc, char *argv[])
 	if(sfp_lua_init())
 		return 1;
 
-	register_tiles();	
+	register_tiles();
+	register_tiles_physics();
 	map_init();
 	init_ui();
 	

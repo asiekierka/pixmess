@@ -23,6 +23,9 @@ void tileinfo_clear_flag(u8 type, u32 flag);
 void tileinfo_set_allowed_colors(u8 type, u32 ac);
 void tileinfo_set_allowed_chars(u8 type, u16 len, const u16* ac);
 void tileinfo_set_preview_data(u8 type, u16 preview_char, u8 preview_color);
+u8 tileinfo_is_set(u8 type);
+u16 tileinfo_types();
+tileinfo_t *tileinfo_get(u8 type);
 
 inline char* tile_get_name(u8 type);
 inline u16 tile_get_preview_char(u8 type);

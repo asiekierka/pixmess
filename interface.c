@@ -162,7 +162,7 @@ void render_type_window(void)
 	for(i=0;i<20;i++)
 	{
 		j = 1+i+(scrollbar_pos*4);	
-		if(j>=TILE_TYPES) break;
+		if(!tileinfo_is_set(j)) break;
 		px = 8+((i%4)*24);
 		py = 8+((i/4)*24)+(SFP_FIELD_HEIGHT*16-128);
 		mouse_in = inside_rect(mousex,mousey,px-2,py-2,20,20);
@@ -180,7 +180,7 @@ void render_type_window(void)
 		}
 	}
 	mouse_in = inside_rect(sfp_event_mouse_x(),sfp_event_mouse_y(),0,SFP_FIELD_HEIGHT*16-128,112,128);
-	int tmax = ((TILE_TYPES+2/4)-4);
+	int tmax = ((tileinfo_types()+2/4)-4);
 	render_scrollbar(104-1,(SFP_FIELD_HEIGHT*16-128),128,(tmax>0?tmax:0),mouse_in);
 
 	sfp_draw_rect(0,SFP_FIELD_HEIGHT*16-128,112,128,0xCCCCCC);

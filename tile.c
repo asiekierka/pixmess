@@ -40,6 +40,11 @@ void tileinfo_set_stackable(u8 type, u8 type2)
 		tiles[type]->stack_data[type2] = 1;
 }
 
+u8 tileinfo_is_set(u8 type)
+{
+	return tiles[type]?1:0;
+}
+
 void tileinfo_set_stackable_va(u8 type, u8 amount, ...)
 {
 	va_list args;
@@ -48,6 +53,19 @@ void tileinfo_set_stackable_va(u8 type, u8 amount, ...)
 	for(i=1;i<amount;i++)
 		tileinfo_set_stackable(type, va_arg(args, int));
 	va_end(args);
+}
+
+u16 tileinfo_types()
+{
+	u16 i;
+	for(i=0;i<256;i++)
+		if(!tiles[i]) return i;
+	return 256;
+}
+
+tileinfo_t* tileinfo_get(u8 type)
+{
+	return tiles[type];
 }
 
 void tileinfo_set_flag(u8 type, u32 flag)

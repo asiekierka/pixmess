@@ -27,19 +27,6 @@ typedef struct player
 	char *name;
 } player_t;
 
-typedef struct tileinfo tileinfo_t;
-struct tileinfo
-{
-	u8 type;
-	char* name;
-	u8* stack_data;
-	u16 preview_char;
-	u8 preview_color;
-	u32 flags;
-	u32 allowed_colors;
-	u16 ach_len;
-	u16* allowed_chars;
-};
 
 typedef struct tile tile_t;
 struct tile
@@ -152,5 +139,21 @@ enum
 #define MAP_FLAG_UNDER 2
 #define MAP_FLAG_DATA 4
 #define MAP_FLAG_EXT_DATALEN 8
+
+typedef struct tileinfo tileinfo_t;
+struct tileinfo
+{
+	u8 type;
+	char* name;
+	u8* stack_data;
+	u16 preview_char;
+	u8 preview_color;
+	u32 flags;
+	u32 allowed_colors;
+	u16 ach_len;
+	u16* allowed_chars;
+	int (*f_handle_physics)(map_t *map, s32 x, s32 y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server);
+	u8 (*f_is_active)(tile_t *tile, u8 minimum_power, u8 direction);
+};
 
 #endif /* _SFP_TYPES_H_ */

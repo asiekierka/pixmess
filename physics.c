@@ -67,35 +67,47 @@ tile_t *find_tile_by_type(tile_t *tile, u8 type)
 	return out;
 }
 
+u8 is_tile_active_wire(tile_t *out, u8 min_power, u8 dir)
+{
+	if(out->datalen != 2) return 0;
+	u8 out_power = (out->data[0] - 1);
+	if((dir<4 && out->data[1] == (OPPOSITE(dir))) || out_power>MAXIMUM_POWER) return 0;
+	return out_power;
+}
+
+u8 is_tile_active_pnand(tile_t *out, u8 min_power, u8 dir)
+{
+	if(out->col > 15 && ((dir > 3) || (CHR_PNAND(out->chr)==dir)))
+		return MAXIMUM_POWER;
+	return 0;
+}
+
+u8 is_tile_active_crosser(tile_t *out, u8 min_power, u8 dir)
+{
+	if(out->datalen != 4) return 0;
+	u8 offset = dir & 2;
+	u8 out_dir = out->data[offset+1];
+	u8 out_power = out->data[offset];
+	if((dir<4 && dir == OPPOSITE(out_dir)) || out_power > MAXIMUM_POWER) return 0;
+	return out_power;
+}
+
+u8 is_tile_active_plate(tile_t *out, u8 min_power, u8 dir)
+{
+	if(out->datalen != 1) return 0;
+	return out->data[0]>0?MAXIMUM_POWER:0;
+}
+
 u8 is_tile_active(tile_t *tile, u8 min_power, u8 dir)
 {
 	tile_t *out = tile;
 	while(out != NULL)
 	{
-		switch(out->type)
+		if(tile_active(*out))
 		{
-			case TILE_WIRE: {
-				if(out->datalen != 2) break;
-				u8 out_power = (out->data[0] - 1);
-				if((dir<4 && out->data[1] == (OPPOSITE(dir))) || out_power>MAXIMUM_POWER) return 0;
-				return out_power;
-				break; }
-			case TILE_PNAND: {
-				if(out->col > 15 && ((dir > 3) || (CHR_PNAND(out->chr)==dir)))
-					return MAXIMUM_POWER;
-				break; }
-			case TILE_CROSSER: {
-				if(out->datalen != 4) break;
-				u8 offset = dir & 2;
-				u8 out_dir = out->data[offset+1];
-				u8 out_power = out->data[offset];
-				if((dir<4 && dir == OPPOSITE(out_dir)) || out_power > MAXIMUM_POWER) return 0;
-				return out_power;
-				break; }
-			case TILE_PLATE: {
-				if(out->datalen != 1) break;
-				return out->data[0]>0?MAXIMUM_POWER:0;
-				break; }
+			tileinfo_t *ti = tileinfo_get(out->type);
+			if(ti->f_is_active)
+				return ti->f_is_active(out,min_power,dir);
 		}
 		out = out->under;
 	}
@@ -113,7 +125,7 @@ u8 can_tile_active(tile_t *tile)
 	return 0;
 }
 
-int handle_physics_tile_wire(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+int handle_physics_tile_wire(map_t *map, s32 x, s32 y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
 {
 	int dir = 0;
 	u8 bg = tile->col>>4;
@@ -170,7 +182,7 @@ int handle_physics_tile_wire(map_t *map, int x, int y, tile_t *tile, u8 uidx, ti
 	return 0;
 }
 
-int handle_physics_tile_pnand(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+int handle_physics_tile_pnand(map_t *map, s32 x, s32 y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
 {
 	if(!is_server) return 0;
 
@@ -203,7 +215,7 @@ int handle_physics_tile_pnand(map_t *map, int x, int y, tile_t *tile, u8 uidx, t
 	return 0;
 }
 
-int handle_physics_tile_crosser(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+int handle_physics_tile_crosser(map_t *map, s32 x, s32 y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
 {
 	if(!is_server) return 0;
 	if(tile->datalen != 4) // Fix the data, if corrupted.
@@ -244,7 +256,7 @@ int handle_physics_tile_crosser(map_t *map, int x, int y, tile_t *tile, u8 uidx,
 	return 0;
 }
 
-int handle_physics_tile_plate(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+int handle_physics_tile_plate(map_t *map, s32 x, s32 y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
 {
 	if(!is_server) return 0;
 
@@ -266,7 +278,7 @@ int handle_physics_tile_plate(map_t *map, int x, int y, tile_t *tile, u8 uidx, t
 	return 0;
 }
 
-int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
+int handle_physics_tile(map_t *map, s32 x, s32 y, tile_t *tile_old, u8 uidx)
 {
 	if(map == NULL || tile_old == NULL) return -1;
 	u8 is_server = (map == server_map);
@@ -285,18 +297,11 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 	ntiles[2] = map_get_tile_ref(map,x+1,y);
 	ntiles[3] = map_get_tile_ref(map,x-1,y);
 
-	switch(tile->type)
-	{
-		case TILE_WIRE:
-			return handle_physics_tile_wire(map,x,y,tile,uidx,ntiles,is_server);
-		case TILE_PNAND:
-			return handle_physics_tile_pnand(map,x,y,tile,uidx,ntiles,is_server);
-		case TILE_CROSSER:
-			return handle_physics_tile_crosser(map,x,y,tile,uidx,ntiles,is_server);
-		case TILE_PLATE:
-			return handle_physics_tile_plate(map,x,y,tile,uidx,ntiles,is_server);
-	}
+	tileinfo_t *ti = tileinfo_get(tile->type);
 	
+	if(ti->f_handle_physics)
+		return ti->f_handle_physics(map,x,y,tile,uidx,ntiles,is_server);
+
 	return 0;
 }
 
@@ -359,4 +364,25 @@ void handle_physics(map_t *map)
 		free(old_list);
 	}
 	map_switch_masks(map);
+}
+
+void register_tiles_physics()
+{
+	tileinfo_t *ti;
+
+	ti = tileinfo_get(TILE_WIRE);
+	ti->f_is_active = &is_tile_active_wire;
+	ti->f_handle_physics = &handle_physics_tile_wire;
+
+	ti = tileinfo_get(TILE_PNAND);
+	ti->f_is_active = &is_tile_active_pnand;
+	ti->f_handle_physics = &handle_physics_tile_pnand;
+
+	ti = tileinfo_get(TILE_CROSSER);
+	ti->f_is_active = &is_tile_active_crosser;
+	ti->f_handle_physics = &handle_physics_tile_crosser;
+
+	ti = tileinfo_get(TILE_PLATE);
+	ti->f_is_active = &is_tile_active_plate;
+	ti->f_handle_physics = &handle_physics_tile_plate;
 }

@@ -13,6 +13,7 @@ enum
 	HPT_RET_UPDATE_SELF_AND_NEIGHBORS
 };
 
+void register_tiles_physics();
 void handle_physics(map_t *map);
 
 #endif /* _PHYSICS_H_ */
