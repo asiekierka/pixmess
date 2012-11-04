@@ -39,7 +39,7 @@ char* names[TILE_TYPES] = {
 	"Plate"
 };
 
-const u32 tile_flags[TILE_TYPES] = {
+u32 tile_flags[TILE_TYPES] = {
 	TILE_WALKABLE,
 	TILE_WALKABLE,
 	0,
@@ -49,6 +49,18 @@ const u32 tile_flags[TILE_TYPES] = {
 	TILE_ACTIVE | TILE_TRANSPARENT,
 	TILE_ACTIVE | TILE_WALKABLE | TILE_TRANSPARENT
 };
+
+void tile_set_name(u8 type, char* name)
+{
+	if(type<TILE_TYPES)
+		names[type] = name;
+}
+
+void tile_set_flag(u8 type, u32 flag)
+{
+	if(type<TILE_TYPES)
+		tile_flags[type] |= flag;
+}
 
 inline u8 tile_overlay(tile_t tile)
 {

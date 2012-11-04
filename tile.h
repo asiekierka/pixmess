@@ -11,6 +11,9 @@
 #define TILE_TRANSPARENT 4
 #define TILE_OVERLAY 8
 
+void tile_set_name(u8 type, char* name);
+void tile_set_flag(u8 type, u32 flag);
+
 inline char* tile_get_name(u8 type);
 inline u16 tile_get_preview_char(u8 type);
 inline u8 tile_get_preview_color(u8 type);
