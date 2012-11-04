@@ -113,10 +113,163 @@ u8 can_tile_active(tile_t *tile)
 	return 0;
 }
 
+int handle_physics_tile_wire(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+{
+	int dir = 0;
+	u8 bg = tile->col>>4;
+	u8 fg = tile->col&15;
+
+	if(!is_server) return 0;
+
+	if(tile->datalen != 2) // Fix the data, if corrupted.
+	{
+		if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
+		// Set data if it does not exist
+		tile->data = malloc(2);
+		tile->datalen = 2;
+		tile->data[0] = 0;
+		tile->data[1] = 4;
+	}
+	u8 neighbour_power = 0;
+	u8 curr_power = 0;
+	u16 char_old = tile->chr; // Used to check for updates.
+	u8 old_dir = tile->data[1];
+	tile->data[1] = 4;
+	u8 old_power = tile->data[0];
+	u8 char_sel = 0; // Selects the character that the wire will end up using.
+
+	for(dir=0;dir<4;dir++)
+	{
+		neighbour_power = is_tile_active(ntiles[dir],curr_power,OPPOSITE(dir));
+		if(can_tile_active(ntiles[dir])) char_sel |= 1<<dir;
+		if(neighbour_power >= curr_power)
+		{
+			curr_power = neighbour_power;
+			tile->data[1] = OPPOSITE(dir);
+		}
+	}
+
+	tile->chr = wirium_chars[char_sel];
+	tile->data[0] = curr_power;
+
+	if(curr_power>0 && ((fg&7)+8)!=fg)
+	{
+		tile->col = (fg&7)+8;
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	} else if(curr_power==0 && (fg&7)!=fg)
+	{
+		tile->col = (fg&7);
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	} else if(tile->chr != char_old)
+		SELF_ADD_TILE;
+
+	if(old_dir != tile->data[1] || old_power != tile->data[0] || tile->chr != char_old)
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	return 0;
+}
+
+int handle_physics_tile_pnand(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+{
+	if(!is_server) return 0;
+
+	u8 bg = tile->col>>4;
+	u8 fg = tile->col&15;
+
+	int dir = 0;
+	int active_sides = 0;
+	for(dir=0;dir<4;dir++)
+	{
+		if(PNAND_CHR(dir) == tile->chr) continue;
+
+		if((!can_tile_active(ntiles[dir]) && find_tile_by_type(ntiles[dir],TILE_WALL)) ||
+		   is_tile_active(ntiles[dir], 0, OPPOSITE(dir))>0)
+			active_sides++;
+	}
+
+	if((active_sides==1 || active_sides==2) && fg > 0)
+	{
+		tile->col = (fg<<4);
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	}
+	else if(!(active_sides==1 || active_sides==2) && bg > 0)
+	{
+		tile->col = bg;
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	}
+	return 0;
+}
+
+int handle_physics_tile_crosser(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+{
+	if(!is_server) return 0;
+	if(tile->datalen != 4) // Fix the data, if corrupted.
+	{
+		if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
+		// Set data if it does not exist
+		tile->data = malloc(4);
+		tile->datalen = 4;
+		tile->data[1] = 4;
+		tile->data[3] = 4;
+	}
+	u8 neighbour_power = 0;
+
+	u8 old_d1 = tile->data[1];
+	u8 old_d3 = tile->data[3];
+	tile->data[0] = 0;
+	tile->data[1] = 4;
+	tile->data[2] = 0;
+	tile->data[3] = 4;
+
+	u8 changed = 0;
+	u8 dir = 0;
+	for(dir=0;dir<4;dir++)
+	{
+		u8 offset = dir & 2;
+		neighbour_power = is_tile_active(ntiles[dir],tile->data[offset],OPPOSITE(dir));
+		if(neighbour_power > tile->data[offset])
+		{
+			tile->data[offset] = neighbour_power;
+			tile->data[offset+1] = OPPOSITE(dir);
+		}
+	}
+	if(old_d1 != tile->data[1] || old_d3 != tile->data[3])
+	{
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	}
+	return 0;
+}
+
+int handle_physics_tile_plate(map_t *map, int x, int y, tile_t *tile, u8 uidx, tile_t **ntiles, u8 is_server)
+{
+	if(!is_server) return 0;
+
+	if(tile->datalen != 1) // Fix the data, if corrupted.
+	{
+		if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
+		tile->data = malloc(1); tile->datalen = 1;
+		tile->data[0] = 0;
+	}
+
+	u8 prev_plate = tile->data[0];
+	u8 new_plate = player_is_occupied(x,y);
+	if(new_plate != prev_plate)
+	{
+		tile->data[0] = new_plate;
+		SELF_ADD_TILE;
+		return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
+	}
+	return 0;
+}
+
 int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 {
 	if(map == NULL || tile_old == NULL) return -1;
-	int is_server = (map == server_map);
+	u8 is_server = (map == server_map);
 
 	// Make local copy of tile.
 	tile_t *tile = malloc(sizeof(*tile_old));
@@ -124,11 +277,6 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 
 	tile->data = malloc(sizeof(u8)*tile->datalen);
 	memcpy(tile->data,tile_old->data,sizeof(u8)*tile->datalen);
-
-	int i = 0;
-	int dir = 0;
-	u8 bg = tile->col>>4;
-	u8 fg = tile->col&15;
 
 	// time to get the neighbours
 	tile_t *ntiles[4];
@@ -139,130 +287,14 @@ int handle_physics_tile(map_t *map, int x, int y, tile_t *tile_old, u8 uidx)
 
 	switch(tile->type)
 	{
-		case TILE_WIRE: {
-			if(!is_server) return 0;
-			if(tile->datalen != 2) // Fix the data, if corrupted.
-			{
-				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
-				// Set data if it does not exist
-				tile->data = malloc(2);
-				tile->datalen = 2;
-				tile->data[0] = 0;
-				tile->data[1] = 4;
-			}
-			u8 neighbour_power = 0;
-			u8 curr_power = 0;
-			u16 char_old = tile->chr; // Used to check for updates.
-			u8 old_dir = tile->data[1];
-			tile->data[1] = 4;
-			u8 old_power = tile->data[0];
-			u8 char_sel = 0; // Selects the character that the wire will end up using.
-			for(dir=0;dir<4;dir++)
-			{
-				neighbour_power = is_tile_active(ntiles[dir],curr_power,OPPOSITE(dir));
-				if(can_tile_active(ntiles[dir])) char_sel |= 1<<dir;
-				if(neighbour_power >= curr_power)
-				{
-					curr_power = neighbour_power;
-					tile->data[1] = OPPOSITE(dir);
-				}
-			}
-			tile->chr = wirium_chars[char_sel];
-			tile->data[0] = curr_power;
-			if(curr_power>0 && ((fg&7)+8)!=fg)
-			{
-				tile->col = (fg&7)+8;
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			} else if(curr_power==0 && (fg&7)!=fg)
-			{
-				tile->col = (fg&7);
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			} else if(tile->chr != char_old)
-			{
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			}
-			if(old_dir != tile->data[1] || old_power != tile->data[0])
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			return 0; } break;
-		case TILE_PNAND: {
-			if(!is_server) return 0;
-			int j = 0;
-			for(dir=0;dir<4;dir++)
-			{
-				if(PNAND_CHR(dir) == tile->chr) continue;
-
-				if((!can_tile_active(ntiles[dir]) && find_tile_by_type(ntiles[dir],TILE_WALL)) ||
-				   is_tile_active(ntiles[dir], 0, OPPOSITE(dir))>0)
-					j++;
-			}
-			if((j==1 || j==2) && fg > 0)
-			{
-				tile->col = (fg<<4);
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			}
-			else if(!(j==1 || j==2) && bg > 0)
-			{
-				tile->col = bg;
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			}
-			return 0; } break;
-		case TILE_CROSSER: {
-			if(!is_server) return 0;
-			if(tile->datalen != 4) // Fix the data, if corrupted.
-			{
-				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
-				// Set data if it does not exist
-				tile->data = malloc(4);
-				tile->datalen = 4;
-				tile->data[1] = 4;
-				tile->data[3] = 4;
-			}
-			u8 neighbour_power = 0;
-			u8 old_d1 = tile->data[1];
-			u8 old_d3 = tile->data[3];
-			tile->data[0] = 0;
-			tile->data[1] = 4;
-			tile->data[2] = 0;
-			tile->data[3] = 4;
-			u8 changed = 0;
-			for(dir=0;dir<4;dir++)
-			{
-				u8 offset = dir & 2;
-				neighbour_power = is_tile_active(ntiles[dir],tile->data[offset],OPPOSITE(dir));
-				if(neighbour_power > tile->data[offset])
-				{
-					tile->data[offset] = neighbour_power;
-					tile->data[offset+1] = OPPOSITE(dir);
-				}
-			}
-			if(old_d1 != tile->data[1] || old_d3 != tile->data[3])
-			{
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			}
-			return 0; } break;
-		case TILE_PLATE: {
-			if(!is_server) return 0;
-			if(tile->datalen != 1) // Fix the data, if corrupted.
-			{
-				if(tile->datalen > 0 || tile->data != NULL) free(tile->data);
-				tile->data = malloc(1); tile->datalen = 1;
-				tile->data[0] = 0;
-			}
-			u8 prev_plate = tile->data[0];
-			u8 new_plate = player_is_occupied(x,y);
-			if(new_plate != prev_plate)
-			{
-				tile->data[0] = new_plate;
-				SELF_ADD_TILE;
-				return HPT_RET_UPDATE_SELF_AND_NEIGHBORS;
-			}
-			return 0; } break;
+		case TILE_WIRE:
+			return handle_physics_tile_wire(map,x,y,tile,uidx,ntiles,is_server);
+		case TILE_PNAND:
+			return handle_physics_tile_pnand(map,x,y,tile,uidx,ntiles,is_server);
+		case TILE_CROSSER:
+			return handle_physics_tile_crosser(map,x,y,tile,uidx,ntiles,is_server);
+		case TILE_PLATE:
+			return handle_physics_tile_plate(map,x,y,tile,uidx,ntiles,is_server);
 	}
 	
 	return 0;
