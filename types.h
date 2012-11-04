@@ -27,6 +27,20 @@ typedef struct player
 	char *name;
 } player_t;
 
+typedef struct tileinfo tileinfo_t;
+struct tileinfo
+{
+	u8 type;
+	char* name;
+	u8* stack_data;
+	u16 preview_char;
+	u8 preview_color;
+	u32 flags;
+	u32 allowed_colors;
+	u16 ach_len;
+	u16* allowed_chars;
+};
+
 typedef struct tile tile_t;
 struct tile
 {

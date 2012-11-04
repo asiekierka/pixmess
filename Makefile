@@ -19,7 +19,7 @@ BINNAME = pixmess
 
 OBJS = main.o event.o lua.o map.o player.o render.o tile.o interface.o \
 	network.o client.o server.o map_rw.o physics.o chat.o audio.o \
-	$(OBJS_EXTRA)
+	tile_register.o $(OBJS_EXTRA)
 
 INCLUDES = common.h render.h misc.h render_data.h player.h tile.h event.h map.h \
 	interface.h network.h client.h server.h types.h lua.h physics.h chat.h \
